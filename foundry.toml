@@ -2,5 +2,9 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-
+remappings = [
+    "@chainlink/contracts/src/v0.8/=lib/chainlink-brownie-contracts/contracts/src/v0.8/dev",               #Ver si no hace confilictos con otro tipo de remappings
+    "@chainlink/contracts/src/v0.8/shared/access/=lib/chainlink-brownie-contracts/contracts/src/v0.8/dev",
+]
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+#Ver si no hace confilictos con
