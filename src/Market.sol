@@ -8,21 +8,21 @@ import {SLA} from "./SLA.sol";
 contract Market {
     //List to Restrict SLA creation to providers
     mapping(address => string) public provider;
-    mapping(address => bool) internal existProvider;
+    mapping(address => bool) private providerExist;
 
     SLA[] public listOfSLA; //List of SLA
-    address i_owner; //Saving contract owner
+    address private i_owner; //Saving contract owner
 
     constructor(string memory _providerName) {
         i_owner = msg.sender;
         //inicialization of provider mappings
         provider[i_owner] = _providerName;
-        existProvider[i_owner] = true;
+        providerExist[i_owner] = true;
     }
 
     ////Restrict SLA creation to providers
     modifier onlyProvider() {
-        require(existProvider[msg.sender], "Provider not allowed");
+        require(providerExist[msg.sender], "Market_InvalidProvider");
         _;
     }
 
@@ -31,7 +31,7 @@ contract Market {
         address _providerAddress
     ) public onlyProvider {
         provider[_providerAddress] = _providerName;
-        existProvider[_providerAddress] = true;
+        providerExist[_providerAddress] = true;
     }
 
     function createSLA(
@@ -72,6 +72,16 @@ contract Market {
     {
         return listOfSLA[_index].retrieveInfo();
     }
+
+    function getOwner() external view returns (address) {
+        return i_owner;
+    }
+
+    function getProviderFromAddress(
+        address providerAddress
+    ) external view returns (bool) {
+        return providerExist[providerAddress];
+    }
 }
 
 /*
@@ -83,7 +93,8 @@ Entry example
 /**Actividades para SC Market:
  * 1. Recibe parámetros para la creación de SLA
  * 2. Hacer modificador de requerido para crear SC SLA inactivos (Solo proveedores registrados pueden crear nuevos SLA)
- * 3. Hacer función de descubrimiento de SLA “inactivos” (que se devuelva quienes son los proveedores)
+ * 3. Hacer función de descubrimiento de SLA “inactivos”
  * 4. Asegurarse de que solo los clientes pueden ver los SLAs
  * 5. Añadir cliente inactivo y evento a SLA subasta
+ * 6. Añadir eventos de creacion de contrato
  */
