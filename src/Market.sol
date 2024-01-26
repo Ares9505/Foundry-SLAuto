@@ -35,30 +35,42 @@ contract Market {
     }
 
     function createSLA(
-        string memory docHash,
-        string memory APIKey,
-        //Poner todos los endpoint
-        string memory endpointLatency,
-        //Time parameters
-        uint256 auctionWindow, //pending
-        uint256 expirationDate
+        string memory _docHash,
+        uint256 _maxlatency,
+        uint256 _minthroughput,
+        uint256 _maxJitter,
+        uint256 _minBandWith,
+        string memory _endpoint
     ) public onlyProvider {
-        string memory providerName = provider[msg.sender];
-        address providerAddress = msg.sender;
         SLA newSLA = new SLA(
-            providerName,
-            providerAddress,
-            docHash,
-            APIKey,
-            endpointLatency,
-            auctionWindow,
-            expirationDate
+            provider[msg.sender],
+            msg.sender,
+            _docHash,
+            _maxlatency,
+            _minthroughput,
+            _maxJitter,
+            _minBandWith,
+            _endpoint
         );
         listOfSLA.push(newSLA);
     }
 
-    function discoverSLA(uint _index) public view returns (string memory) {
-        return listOfSLA[_index].retrieve();
+    function discoverSLA(
+        uint _index
+    )
+        public
+        view
+        returns (
+            string memory,
+            address,
+            string memory,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return listOfSLA[_index].retrieveInfo();
     }
 }
 
@@ -67,3 +79,11 @@ Add parameters
 Entry example
 "HashDocumentoEjemplo", "APIKeyEjemplo", "EndpointLatencyEjemplo", 86400, 1672531199
 */
+
+/**Actividades para SC Market:
+ * 1. Recibe parámetros para la creación de SLA
+ * 2. Hacer modificador de requerido para crear SC SLA inactivos (Solo proveedores registrados pueden crear nuevos SLA)
+ * 3. Hacer función de descubrimiento de SLA “inactivos” (que se devuelva quienes son los proveedores)
+ * 4. Asegurarse de que solo los clientes pueden ver los SLAs
+ * 5. Añadir cliente inactivo y evento a SLA subasta
+ */
