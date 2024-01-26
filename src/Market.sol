@@ -6,6 +6,7 @@ pragma solidity 0.8.19;
 import {SLA} from "./SLA.sol";
 
 contract Market {
+    error Market_InvalidProvider();
     //List to Restrict SLA creation to providers
     mapping(address => string) public provider;
     mapping(address => bool) private providerExist;
@@ -22,7 +23,9 @@ contract Market {
 
     ////Restrict SLA creation to providers
     modifier onlyProvider() {
-        require(providerExist[msg.sender], "Market_InvalidProvider");
+        if (!providerExist[msg.sender]) {
+            revert Market_InvalidProvider();
+        }
         _;
     }
 
@@ -92,8 +95,8 @@ Entry example
 
 /**Actividades para SC Market:
  * 1. Recibe parámetros para la creación de SLA
- * 2. Hacer modificador de requerido para crear SC SLA inactivos (Solo proveedores registrados pueden crear nuevos SLA)
- * 3. Hacer función de descubrimiento de SLA “inactivos”
+ * 2. Hacer modificador de requerido para crear SC SLA inactivos. (Solo proveedores registrados pueden crear nuevos SLA)
+ * 3. Hacer función de descubrimiento de SLA “inactivos”.
  * 4. Asegurarse de que solo los clientes pueden ver los SLAs
  * 5. Añadir cliente inactivo y evento a SLA subasta
  * 6. Añadir eventos de creacion de contrato
