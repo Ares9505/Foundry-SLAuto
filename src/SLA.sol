@@ -3,42 +3,86 @@
 pragma solidity ^0.8.19;
 
 contract SLA {
-    //SLA Parameters`
-    string providerName;
-    address providerAddress;
-    string docHash;
-    string APIKey;
-    //Put here all enpoints
-    string endpointLatency;
-    //Time parameters
-    uint256 auctionWindow; //pending
-    uint256 expirationDate;
+    //SLA Info
+    string private providerName;
+    address private providerAddress;
+    string private docHash;
+
+    //SLA parameters thresholds
+    uint256 private maxlatency;
+    uint256 private minthroughput;
+    uint256 private maxJitter;
+    uint256 private minBandWith;
+
+    //Not needed to retrive
+    string private endpoint;
+    bool private activeContract;
+    bool private contractEnded;
+
+    //string aPIKey;
 
     // Constructor para inicializar los parámetros del contrato
     constructor(
         string memory _providerName,
         address _providerAddress,
         string memory _docHash,
-        string memory _APIKey,
-        string memory _endpointLatency,
-        uint256 _auctionWindow,
-        uint256 _expirationDate
+        uint256 _maxlatency,
+        uint256 _minthroughput,
+        uint256 _maxJitter,
+        uint256 _minBandWith,
+        string memory _endpoint
     ) {
         providerName = _providerName;
         providerAddress = _providerAddress;
         docHash = _docHash;
-        APIKey = _APIKey;
-        endpointLatency = _endpointLatency;
-        auctionWindow = _auctionWindow;
-        expirationDate = _expirationDate;
+        maxlatency = _maxlatency;
+        minthroughput = _minthroughput;
+        maxJitter = _maxJitter;
+        minBandWith = _minBandWith;
+        endpoint = _endpoint;
+        activeContract = false;
+        contractEnded = false;
     }
 
-    function retrieve() public view returns (string memory) {
-        return providerName;
+    function retrieveInfo()
+        public
+        view
+        returns (
+            string memory,
+            address,
+            string memory,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return (
+            providerName,
+            providerAddress,
+            docHash,
+            maxlatency,
+            minthroughput,
+            maxJitter,
+            minBandWith
+        );
+    }
+
+    //Funcion para activar el contrato que será llamada por otro contrato
+    function setActive() external {
+        //añadir cliente
+        //activar contrato
+        activeContract = true;
+    }
+
+    function setContractEnd() external {
+        //hacer pagos finales
+        contractEnded = false;
     }
 }
 
 /*Actividades para SC SLA:
+1. Add SLA Parameters
 1. Modificador q compruebe si el contrato esta terminado o no. Se debe aplicar a todas las funciones
 2. Funcion que añada un cliente al contrato. Esta función solo se puede llamar por el contrato Auction
 3. Al terminarse el contrato se deben descontar las penalizaciones y sumar recompensas.
