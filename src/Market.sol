@@ -44,7 +44,7 @@ contract Market {
         uint256 _maxJitter,
         uint256 _minBandWith,
         string memory _endpoint
-    ) public onlyProvider {
+    ) public onlyProvider returns (address) {
         SLA newSLA = new SLA(
             provider[msg.sender],
             msg.sender,
@@ -56,6 +56,7 @@ contract Market {
             _endpoint
         );
         listOfSLA.push(newSLA);
+        return (address(newSLA));
     }
 
     function discoverSLA(
@@ -75,6 +76,8 @@ contract Market {
     {
         return listOfSLA[_index].retrieveInfo();
     }
+
+    /**Getters */
 
     function getOwner() external view returns (address) {
         return i_owner;

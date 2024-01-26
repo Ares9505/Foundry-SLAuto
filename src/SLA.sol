@@ -44,6 +44,23 @@ contract SLA {
         contractEnded = false;
     }
 
+    //Funcion para activar el contrato que será llamada por otro contrato
+    function setActive() external {
+        //añadir cliente
+        //activar contrato
+        activeContract = true;
+    }
+
+    function setContractEnd() external {
+        //hacer pagos finales
+        contractEnded = false;
+    }
+
+    /**getters */
+    function getSlaActivationState() public view returns (bool) {
+        return activeContract;
+    }
+
     function retrieveInfo()
         public
         view
@@ -67,23 +84,10 @@ contract SLA {
             minBandWith
         );
     }
-
-    //Funcion para activar el contrato que será llamada por otro contrato
-    function setActive() external {
-        //añadir cliente
-        //activar contrato
-        activeContract = true;
-    }
-
-    function setContractEnd() external {
-        //hacer pagos finales
-        contractEnded = false;
-    }
 }
 
 /*Actividades para SC SLA:
-1. Add SLA Parameters
-1. Modificador q compruebe si el contrato esta terminado o no. Se debe aplicar a todas las funciones
+1. Add SLA Parameters X
 2. Funcion que añada un cliente al contrato. Esta función solo se puede llamar por el contrato Auction
 3. Al terminarse el contrato se deben descontar las penalizaciones y sumar recompensas.
     Para no tener gastos por hacer mas de una transaccion si se paga de violacion en violacion.
@@ -94,4 +98,5 @@ contract SLA {
 6. Funcion de retencion por parte del contrato en caso de disputa.
     Esta funcion puede ser llamada por el cliente, y evita q el proveedor pueda retirar fondos
 7. Le informa al SC sistema de recomendacion de las violaciones al terminar el mes
+8. Modificador q compruebe si el contrato esta terminado o no. Se debe aplicar a todas las funciones
 */

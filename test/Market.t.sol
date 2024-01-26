@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {Test, console} from "forge-std/Test.sol";
 import {DeployMarket} from "../script/DeployMarket.s.sol";
 import {Market} from "../src/Market.sol";
+import {SLA} from "../src/SLA.sol";
 
 contract testMarket is Test {
     Market market;
@@ -47,5 +48,20 @@ contract testMarket is Test {
         market.addProvider("etecsa", PROVIDER);
         vm.prank(PROVIDER);
         market.addProvider("movistart", PROVIDER2);
+    }
+
+    function testSLAinactiveBeforeCreation() public {
+        address owner = market.getOwner();
+        vm.prank(owner);
+        address slaAddress = market.createSLA(
+            "0x29303039",
+            10,
+            10,
+            10,
+            10,
+            "http://example.com"
+        );
+        bool activationState = SLA(slaAddress).getSlaActivationState();
+        assert(activationState == false);
     }
 }
