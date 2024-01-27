@@ -21,13 +21,29 @@ contract testMarket is Test {
     function testOnlynNotProviderCantCreateSLA() public {
         vm.prank(NOT_PROVIDER);
         vm.expectRevert();
-        market.createSLA("0x29303039", 10, 10, 10, 10, "http://example.com");
+        market.createSLA(
+            "0x29303039",
+            10,
+            10,
+            10,
+            10,
+            "http://example.com",
+            10
+        );
     }
 
     function testOwnerCanCreateSLA() public {
         address owner = market.getOwner();
         vm.prank(owner);
-        market.createSLA("0x29303039", 10, 10, 10, 10, "http://example.com");
+        market.createSLA(
+            "0x29303039",
+            10,
+            10,
+            10,
+            10,
+            "http://example.com",
+            10
+        );
     }
 
     function testNotProviderCanAddProvider() public {
@@ -53,15 +69,31 @@ contract testMarket is Test {
     function testSLAinactiveBeforeCreation() public {
         address owner = market.getOwner();
         vm.prank(owner);
-        address slaAddress = market.createSLA(
+        (address slaAddress, ) = market.createSLA(
             "0x29303039",
             10,
             10,
             10,
             10,
-            "http://example.com"
+            "http://example.com",
+            10
         );
         bool activationState = SLA(slaAddress).getSlaActivationState();
         assert(activationState == false);
+    }
+
+    function testAuctionCreationAtBeforeSLACreation() public {
+        address owner = market.getOwner();
+        vm.prank(owner);
+        (, address auctionAddress) = market.createSLA(
+            "0x29303039",
+            10,
+            10,
+            10,
+            10,
+            "http://example.com",
+            10
+        );
+        console.log("La direccion de la subasta es: ", auctionAddress);
     }
 }

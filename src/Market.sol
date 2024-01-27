@@ -4,6 +4,7 @@
 pragma solidity 0.8.19;
 
 import {SLA} from "./SLA.sol";
+import {Auction} from "./Auction.sol";
 
 contract Market {
     error Market_InvalidProvider();
@@ -43,8 +44,14 @@ contract Market {
         uint256 _minthroughput,
         uint256 _maxJitter,
         uint256 _minBandWith,
-        string memory _endpoint
-    ) public onlyProvider returns (address) {
+        string memory _endpoint,
+        //auction data
+        uint256 _biddingTime
+    )
+        public
+        onlyProvider
+        returns (address /**sla address */, address /**auction add */)
+    {
         SLA newSLA = new SLA(
             provider[msg.sender],
             msg.sender,
@@ -56,7 +63,11 @@ contract Market {
             _endpoint
         );
         listOfSLA.push(newSLA);
-        return (address(newSLA));
+        Auction newAuction = new Auction(
+            _biddingTime,
+            payable(address(newSLA))
+        );
+        return (address(newSLA), address(newAuction));
     }
 
     function discoverSLA(
@@ -82,12 +93,6 @@ contract Market {
     function getOwner() external view returns (address) {
         return i_owner;
     }
-
-    function getProviderFromAddress(
-        address providerAddress
-    ) external view returns (bool) {
-        return providerExist[providerAddress];
-    }
 }
 
 /*
@@ -97,10 +102,21 @@ Entry example
 */
 
 /**Actividades para SC Market:
- * 1. Recibe parámetros para la creación de SLA
- * 2. Hacer modificador de requerido para crear SC SLA inactivos. (Solo proveedores registrados pueden crear nuevos SLA)
- * 3. Hacer función de descubrimiento de SLA “inactivos”.
+ * 1. Recibe parámetros para la creación de SLA X
+ *      1.1. Para la creacion de un SLA se debe acompañar con la creacion de una subasta que
+ *           requiere la direccion del SLA y el tiempo de subasta como parametros
+ * 2. Hacer modificador de requerido para crear SC SLA inactivos. (Solo proveedores registrados 
+ *      pueden crear nuevos SLA) X
+ * 3. Hacer registro de clientes con los parametros (address, nombre)
+ * 4. Hacer función de descubrimiento de SLA “inactivos”.
+ *      Una idea es q devuelva todos los SLA y q se filtren los inactivos se muestren en la dAPP para no consumir gas de mas
+ * 5. Canalizar como un cliente hace una oferta desde market y llega a la subasta de determinado SLA(Solo un cliente puede participar en la subasta)
+ 
+ * 
  * 4. Asegurarse de que solo los clientes pueden ver los SLAs
  * 5. Añadir cliente inactivo y evento a SLA subasta
  * 6. Añadir eventos de creacion de contrato
+ * 
+ * Revisar
+ 
  */
