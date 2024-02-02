@@ -6,6 +6,7 @@ contract SLA {
     error SLA_SLAAlredyActive();
     error SLA_SLANoActive();
     error SLA_AuctionAddressAlreadySet();
+    error SLA_SLACanEndByAuctionBecauseIsActive();
 
     //SLA Info
     string private providerName;
@@ -55,6 +56,8 @@ contract SLA {
 
     //This function can be called by auction when the auction end without bids
     function setContractEnd() external {
+        //Only can by called if the contract is inactive
+        if (activeContract) revert SLA_SLACanEndByAuctionBecauseIsActive();
         //hacer pagos finales
         contractEnded = true;
     }
@@ -103,11 +106,19 @@ contract SLA {
             minBandWith
         );
     }
+
+    function getContractEnded() external view returns (bool) {
+        return contractEnded;
+    }
+
+    function getMontlyPayment() external view returns (uint256) {
+        return montlyPayment;
+    }
 }
 
 /*Actividades para SC SLA:
 1. Add SLA Parameters X
-2. Funcion que añada un cliente al contrato. Esta función solo se puede llamar por el contrato Auction
+2. Funcion que añada un cliente al contrato. Esta función solo se puede llamar por el contrato Auction X
 3. Al terminarse el contrato se deben descontar las penalizaciones y sumar recompensas.
     Para no tener gastos por hacer mas de una transaccion si se paga de violacion en violacion.
     El pago se hace después del servicio y se descuentan las penalizaciones

@@ -8,6 +8,8 @@ contract Auction {
     error Auction_AuctionAlredyEnded();
     error Auction_SetActiveContractUnsucessful();
     error Auction_HighestBidderCantWithdrawFunds();
+    error Auction_BiddingTimeNotEnd();
+
     address payable beneficiary; // Proveedor dueño de la subasta
     uint256 public auctionEndTime;
     address public slaAddress;
@@ -29,6 +31,7 @@ contract Auction {
         beneficiary = _beneficiary; // the provider is the beneficiary
         auctionEndTime = block.timestamp + _biddingTime;
         slaAddress = _slaAddress;
+        ended = false;
     }
 
     modifier auctionEndedMod() {
@@ -51,6 +54,7 @@ contract Auction {
         //Only can withdraw if the caller is not the current highestbidder
         if (highestBidder == msg.sender)
             revert Auction_HighestBidderCantWithdrawFunds();
+
         uint amount = pendingReturns[msg.sender];
         if (amount > 0) {
             pendingReturns[msg.sender] = 0;
@@ -63,7 +67,9 @@ contract Auction {
         return true;
     }
 
-    function auctionEnd() public auctionEndedMod {
+    function auctionEnd() public {
+        if (block.timestamp < auctionEndTime)
+            revert Auction_BiddingTimeNotEnd();
         if (ended) revert Auction_AuctionAlredyEnded();
         ended = true;
         //End without bidders interest
@@ -78,12 +84,12 @@ contract Auction {
             //Establish client and SLA active
             (bool successSetActive, ) = slaAddress.call(
                 abi.encodeWithSignature(
-                    "setActive(address,montlyPayment)",
+                    "setClient(address,uint256)",
                     highestBidder,
                     highestBid
                 )
             );
-            require(successSetActive, "SLA activated");
+            require(successSetActive, "SLA Activation Error");
         }
         emit auctionEnded(highestBidder, highestBid);
     }
@@ -121,4 +127,6 @@ contract Auction {
  * Pendent
  * Add getters
  * Cambiar a private todas la variables
+ * Restringir Auction end a el chainlink keepers para ser llamada
+ * Fix events auctionEnded, create other events
  */
