@@ -65,8 +65,11 @@ contract Market {
         listOfSLA.push(newSLA);
         Auction newAuction = new Auction(
             _biddingTime,
+            payable(msg.sender),
             payable(address(newSLA))
         );
+        //Pendent: Set AuctionAddress in SLA
+
         return (address(newSLA), address(newAuction));
     }
 
@@ -102,11 +105,11 @@ Entry example
 */
 
 /**Actividades para SC Market:
- * 1. Recibe parámetros para la creación de SLA X
- *      1.1. Para la creacion de un SLA se debe acompañar con la creacion de una subasta que
- *           requiere la direccion del SLA y el tiempo de subasta como parametros
- * 2. Hacer modificador de requerido para crear SC SLA inactivos. (Solo proveedores registrados 
- *      pueden crear nuevos SLA) X
+ *X 1. Recibe parámetros para la creación de SLA 
+ *     X 1.1. Para la creacion de un SLA se debe acompañar con la creacion de una subasta que
+ *           requiere la direccion del SLA y el tiempo de subasta como parametros 
+ * X 2. Hacer modificador de requerido para crear SC SLA inactivos. (Solo proveedores registrados 
+ *      pueden crear nuevos SLA) 
  * 3. Hacer registro de clientes con los parametros (address, nombre)
  * 4. Hacer función de descubrimiento de SLA “inactivos”.
  *      Una idea es q devuelva todos los SLA y q se filtren los inactivos se muestren en la dAPP para no consumir gas de mas

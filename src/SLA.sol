@@ -3,6 +3,10 @@
 pragma solidity ^0.8.19;
 
 contract SLA {
+    error SLA_SLAAlredyActive();
+    error SLA_SLANoActive();
+    error SLA_AuctionAddressAlreadySet();
+
     //SLA Info
     string private providerName;
     address private providerAddress;
@@ -18,6 +22,11 @@ contract SLA {
     string private endpoint;
     bool private activeContract;
     bool private contractEnded;
+
+    //Setup by auction
+    address private client;
+    address private auctionAddress;
+    uint private montlyPayment;
 
     //string aPIKey;
 
@@ -44,16 +53,26 @@ contract SLA {
         contractEnded = false;
     }
 
-    //Funcion para activar el contrato que será llamada por otro contrato
-    function setActive() external {
-        //añadir cliente
-        //activar contrato
-        activeContract = true;
-    }
-
+    //This function can be called by auction when the auction end without bids
     function setContractEnd() external {
         //hacer pagos finales
-        contractEnded = false;
+        contractEnded = true;
+    }
+
+    /**This function will by used to set auction address before SLA and auction creation */
+    function setAuctionAddres() external {
+        if (activeContract) revert SLA_AuctionAddressAlreadySet();
+        auctionAddress = msg.sender;
+    }
+
+    /*This function is called by auction whe the client es defined
+     *and active de SLA operation before asing client
+     */
+    function setClient(address _client, uint _montlyPayment) external {
+        if (activeContract) revert SLA_SLAAlredyActive();
+        client = _client;
+        activeContract = true;
+        montlyPayment = _montlyPayment;
     }
 
     /**getters */
