@@ -90,15 +90,21 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
 Funcionó uno de los contratos: 
 Address: 0x972F78ad66FadFE9635474085728b99d712f7Df3
 Nombre: API_Consumer_single_ch.sol
-Puedo interactual con el desde Remix
+Puedo interactuar con el desde Remix
 Ya está desplegado, puede cargarse desde su dirección solo q hay q compilar el archivo.sol previamente.
 */
 
 /*Actividades de implementación
-1. Func solicitar métricas cada 1 min (Chainlink automation)
+
+1. Crear interacciones con el contrato para fondearlo con LINKs.
+2. Crear interaccion para cambiar la url y el path de la API.
+
+
+*. Func solicitar métricas cada 1 min (Chainlink automation)
     Requiere el endpoint
     Devuelve la metrica o las métricas que deben ser uint
     probar con una api ejemplo
-2. Crear interacciones con el contrato para fondearlo con LINKs.
-3. Crear interaccion para cambiar la url y el path de la API.
+
+/* Investigacion pendiente:
+Me encontre esta lbreria para correr nodos chainlink locales: https://docs.chain.link/quickstarts/foundry-chainlink-toolkit
 */

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
@@ -24,8 +24,3 @@ contract DeployAuction is Script {
         return auction;
     }
 }
-
-//Probar correr el script con anvil
-//Hacer makefile para correr con anvil
-//Hacer un test de integracion donde se corran dos deplous de SLA y auction
-//Hacer un test para market con todo el proceso
