@@ -13,6 +13,10 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     error SLA_SLACanEndByAuctionBecauseIsActive();
     error SLA_NoFitNumberOfParamsForExtraction();
     error SLA_Str2UintInvalidDigit();
+    error SLA_KPIsAlreadyset();
+    error SLA_InvalidProvider();
+    error SLA_KQIsAlreadySet();
+    error SLA_KPIsMostBeSetFirst();
 
     //API Consumer variables
     using Chainlink for Chainlink.Request;
@@ -39,6 +43,25 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     uint256 private maxJitter;
     uint256 private minBandWith;
 
+    //SLA 2nd batch KPIs thresholds
+    uint256 private bitRate;
+    uint256 private maxPacketLoos;
+    uint256 private peakDataRateUL;
+    uint256 private peakDataRateDL;
+    //uint256 private minMobility;
+    uint256 private maxMobility;
+    uint256 private serviceReliability;
+    bool setKPIsSuccess;
+
+    //SLA KQI thresholds
+    uint256 private maxSurvivalTime;
+    uint256 private minSurvivalTime;
+    //uint256 private experienceDataRateDL;
+    //uint256 private experienceDataRateUL;
+    uint256 private maxInterruptionTime;
+    uint256 private minInterrumptionTime;
+    bool setKQIsSuccess;
+
     //Not needed to retrive
     string private endpoint;
     bool private activeContract;
@@ -55,13 +78,16 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     //Used in Monitoring after API Consumer
     uint256 private violationsPaymentPeriodCount; // reseterar en cada periodo
     uint256 private totalViolations; //for future think in send violations to SC recomendation system
-    uint256 private constant mesurePeriod = 1 minutes;
-    uint256 private constant paymentPeriod = 30 days; //monthly
+
     uint256 private totalMesurements;
     uint256 private disponibilityCalculated; //Calculeted monthly
-    uint256 private constant disponibility10 = 99;
-    uint256 private constant disponibility30 = 90;
     uint256 private currentDebt;
+
+    //MonitingParams
+    uint256 private disponibility10;
+    uint256 private disponibility30;
+    uint256 private mesurePeriod;
+    uint256 private paymentPeriod; //monthly
 
     //termination variables
     bool private endPaid; //Tell if the entire contract was paid
@@ -97,6 +123,10 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         contractEnded = false;
         //needed for penalties calculation and termination
 
+        //seting not complete parameters
+        setKPIsSuccess = false;
+        setKQIsSuccess = false;
+
         //API Consumer Params
         setChainlinkToken(0x779877A7B0D9E8603169DdbD7836e478b4624789);
         setChainlinkOracle(0x6090149792dAAeE9D1D568c9f9a6F6B46AA29eFD);
@@ -108,9 +138,6 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         //Violations and Penalties calculations params
         violationsPaymentPeriodCount = 0;
         totalViolations = 0;
-        totalMesurements = paymentPeriod / mesurePeriod;
-        //disponibility10 = 99; //Usualmente 99 Porciento de disponibilidad para compensar 10%
-        //disponibility30 = 90; //Usualmente  90 Porciento de disponibilidad para compensar 30%
         currentDebt = 0;
     }
 
@@ -151,6 +178,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         //Esta funcion se ejecuta si han pasado payment period
     }
 
+    //Note taht only owner is a modifier from ConfirmedOwner.sol
     function withdrawLink() public onlyOwner {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         require(
@@ -259,6 +287,65 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     }
 
     /** Setters */
+
+    function setSLAParamsKPIsSecondBatch(
+        address _providerAddress,
+        uint256 _bitRate,
+        uint256 _maxPacketLoos,
+        //uint256 _peakDataRateUL,
+        //uint256 _peakDataRateDL,
+        //uint256 _minMobility,
+        uint256 _maxMobility,
+        uint256 _serviceReliability
+    ) public {
+        if (_providerAddress != providerAddress) revert SLA_InvalidProvider();
+        if (!setKPIsSuccess) {
+            bitRate = _bitRate;
+            maxPacketLoos = _maxPacketLoos;
+            //peakDataRateUL =  _peakDataRateUL,
+            //peakDataRateDL =  _peakDataRateDL,
+            //minMobility    =  _minMobility,
+            maxMobility = _maxMobility;
+            serviceReliability = _serviceReliability;
+            setKPIsSuccess = true;
+        } else revert SLA_KPIsAlreadyset();
+    }
+
+    function setSLAParamsKQIsParamsMonitoring(
+        address _providerAddress,
+        uint256 _maxSurvivalTime,
+        uint256 _minSurvivalTime,
+        //uint256 _experienceDataRateDL,
+        //uint256 _experienceDataRateUL,
+        uint256 _maxInterruptionTime,
+        uint256 _minInterrumptionTime,
+        //monitoring params
+        uint256 _disponibility10,
+        uint256 _disponibility30,
+        uint256 _mesurePeriod,
+        uint256 _paymentPeriod
+    ) public {
+        if (_providerAddress != providerAddress) revert SLA_InvalidProvider();
+        //set   KQIs
+        if (!setKPIsSuccess) revert SLA_KPIsMostBeSetFirst();
+        if (!setKQIsSuccess) {
+            maxSurvivalTime = _maxSurvivalTime;
+            minSurvivalTime = _minSurvivalTime;
+            //experienceDataRateDL = _experienceDataRateDL;
+            //experienceDataRateUL = _experienceDataRateUL;
+            maxInterruptionTime = _maxInterruptionTime;
+            minInterrumptionTime = _minInterrumptionTime;
+
+            disponibility10 = _disponibility10; //Usualmente 99 Porciento de disponibilidad para compensar 10%
+            disponibility30 = _disponibility30; //Usualmente  90 Porciento de disponibilidad para compensar 30%
+            mesurePeriod = _mesurePeriod;
+            paymentPeriod = _paymentPeriod;
+            totalMesurements = paymentPeriod / mesurePeriod;
+
+            setKQIsSuccess = true;
+        } else revert SLA_KQIsAlreadySet();
+    }
+
     //This function can be called by auction when the auction end without bids
     function setContractEnd() public {
         //(P) poner condicion de que solo se puede llamar por auction y el propio contrato (internal y external modifier conflic)
@@ -322,10 +409,30 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     function getMontlyPayment() external view returns (uint256) {
         return monthlyPayment;
     }
+
+    function getProviderAddress() external view returns (address) {
+        return providerAddress;
+    }
 }
 
 /*Actividades para SC SLA:
 1. Add SLA Parameters X
+    Modificar para añadir mas parámetros
+        uint256 _bitRate,
+        uint256 _maxPacketLoos,
+        uint256 _peakDataRateUL,
+        uint256 _peakDataRateDL,
+        //uint256 _minMobility,
+        uint256 _maxMobility,
+        uint256 _serviceReliability,
+        uint256 _maxSurvivalTime,
+        uint256 _minSurvivalTime,
+        //uint256 _experienceDataRateDL,
+        //uint256 _experienceDataRateUL,
+        uint256 _maxInterruptionTime,
+        uint256 _minInterrumptionTime,
+
+
 2. Funcion que añada un cliente al contrato. Esta función solo se puede llamar por el contrato Auction X
     Esta funcion activa el contrato X
     Fija el pago mensual X

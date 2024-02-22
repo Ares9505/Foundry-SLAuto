@@ -38,20 +38,14 @@ contract Market {
         providerExist[_providerAddress] = true;
     }
 
-    function createSLA(
+    function createCustomSLA(
         string memory _docHash,
         uint256 _maxlatency,
         uint256 _minthroughput,
         uint256 _maxJitter,
         uint256 _minBandWith,
-        string memory _endpoint,
-        //auction data
-        uint256 _biddingTime
-    )
-        public
-        onlyProvider
-        returns (address /**sla address */, address /**auction add */)
-    {
+        string memory _endpoint
+    ) public onlyProvider returns (address /**sla address */) {
         SLA newSLA = new SLA(
             provider[msg.sender],
             msg.sender,
@@ -63,14 +57,66 @@ contract Market {
             _endpoint
         );
         listOfSLA.push(newSLA);
+        return address(newSLA);
+    }
+
+    function setSLAParamsKPIsSecondBatch(
+        address _slaAddress,
+        uint256 _bitRate,
+        uint256 _maxPacketLoos,
+        //uint256 _peakDataRateUL,
+        //uint256 _peakDataRateDL,
+        //uint256 _minMobility,
+        uint256 _maxMobility,
+        uint256 _serviceReliability
+    ) public {
+        SLA(_slaAddress).setSLAParamsKPIsSecondBatch(
+            msg.sender, //providerAddress caller
+            _bitRate,
+            _maxPacketLoos,
+            // _peakDataRateUL,
+            // _peakDataRateDL,
+            // _minMobility,
+            _maxMobility,
+            _serviceReliability
+        );
+    }
+
+    function setSLAParamsKQIs(
+        address _slaAddress,
+        uint256 _maxSurvivalTime,
+        uint256 _minSurvivalTime,
+        //uint256 _experienceDataRateDL,
+        //uint256 _experienceDataRateUL,
+        uint256 _maxInterruptionTime,
+        uint256 _minInterrumptionTime,
+        //
+        uint256 _disponibility10,
+        uint256 _disponibility30,
+        uint256 _mesurePeriod,
+        uint256 _paymentPeriod,
+        //
+        uint256 _biddingTime
+    ) public returns (address) {
+        SLA(_slaAddress).setSLAParamsKQIsParamsMonitoring(
+            msg.sender, //providerAddress caller
+            _maxSurvivalTime,
+            _minSurvivalTime,
+            // _experienceDataRateDL,
+            // _experienceDataRateUL,
+            _maxInterruptionTime,
+            _minInterrumptionTime,
+            _disponibility10,
+            _disponibility30,
+            _mesurePeriod,
+            _paymentPeriod
+        );
         Auction newAuction = new Auction(
             _biddingTime,
             payable(msg.sender),
-            payable(address(newSLA))
+            payable(address(_slaAddress))
         );
-        //Pendent: Set AuctionAddress in SLA
-
-        return (address(newSLA), address(newAuction));
+        return address(newAuction);
     }
 
     function discoverSLA(
