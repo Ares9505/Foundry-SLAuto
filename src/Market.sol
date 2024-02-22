@@ -110,11 +110,13 @@ Entry example
  *           requiere la direccion del SLA y el tiempo de subasta como parametros 
  * X 2. Hacer modificador de requerido para crear SC SLA inactivos. (Solo proveedores registrados 
  *      pueden crear nuevos SLA) 
+ * 
  * 3. Hacer registro de clientes con los parametros (address, nombre)
  * 4. Hacer función de descubrimiento de SLA “inactivos”.
  *      Una idea es q devuelva todos los SLA y q se filtren los inactivos se muestren en la dAPP para no consumir gas de mas
  * 5. Canalizar como un cliente hace una oferta desde market y llega a la subasta de determinado SLA(Solo un cliente puede participar en la subasta)
- 
+
+
  * 
  * 4. Asegurarse de que solo los clientes pueden ver los SLAs
  * 5. Añadir cliente inactivo y evento a SLA subasta

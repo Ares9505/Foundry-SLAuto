@@ -78,4 +78,7 @@ contract SLATest is Test {
     }
 
     //check Violations
+    //Calculate penalties
+    //Envío de fondos
+    //Terminacion
 }

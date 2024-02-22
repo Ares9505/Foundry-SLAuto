@@ -29,3 +29,5 @@ contract APIConsumerTest is Test {
         console.log(dummyVolume);
     }
 }
+
+/**Importante descomentar la linea 145 de ChainlinkClient.sol antes de desplegar el contrato en sepolia */

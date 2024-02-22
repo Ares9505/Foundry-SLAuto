@@ -182,7 +182,7 @@ contract testMarket is Test {
         //
     }
 
-    /**  After SLA Creation, Clients bids, and Auction End the higestbid most
+    /**  After SLA Creation, Clients bids, and Auction End the highestbid most
      * by transfer to the beneficiary and the SLA most be set to active
      */
     function testTransferMoneyToBeneficiaryAndSLAActivationWhenAuctionEndWithHighestBidder()

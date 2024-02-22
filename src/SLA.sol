@@ -31,6 +31,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     string private providerName;
     address private providerAddress;
     string private docHash;
+    uint private constant contractDuration = 365 days; //usualmente un año
 
     //SLA parameters thresholds
     uint256 private maxlatency;
@@ -46,7 +47,25 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     //Setup by auction
     address private client;
     address private auctionAddress;
-    uint private montlyPayment;
+    uint256 private monthlyPayment;
+    uint256 private startDate;
+    uint256 private lastPaymentCut;
+    uint256 private endDate;
+
+    //Used in Monitoring after API Consumer
+    uint256 private violationsPaymentPeriodCount; // reseterar en cada periodo
+    uint256 private totalViolations; //for future think in send violations to SC recomendation system
+    uint256 private constant mesurePeriod = 1 minutes;
+    uint256 private constant paymentPeriod = 30 days; //monthly
+    uint256 private totalMesurements;
+    uint256 private disponibilityCalculated; //Calculeted monthly
+    uint256 private constant disponibility10 = 99;
+    uint256 private constant disponibility30 = 90;
+    uint256 private currentDebt;
+
+    //termination variables
+    bool private endPaid; //Tell if the entire contract was paid
+    //Contract End , alredy declared
 
     event RequestVolume(bytes32 indexed requestId, string volume);
 
@@ -62,7 +81,10 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         uint256 _maxJitter,
         uint256 _minBandWith,
         string memory _endpoint
-    ) ConfirmedOwner(msg.sender) {
+    )
+        //Set disponibility
+        ConfirmedOwner(msg.sender)
+    {
         providerName = _providerName;
         providerAddress = _providerAddress;
         docHash = _docHash;
@@ -73,6 +95,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         endpoint = _endpoint;
         activeContract = false;
         contractEnded = false;
+        //needed for penalties calculation and termination
 
         //API Consumer Params
         setChainlinkToken(0x779877A7B0D9E8603169DdbD7836e478b4624789);
@@ -81,10 +104,19 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         fee = (1 * LINK_DIVISIBILITY) / 10;
         myAPIurl = "https://httpbin.org/get?metrics=19%2C11%2C12";
         myPath = "args,metrics";
+
+        //Violations and Penalties calculations params
+        violationsPaymentPeriodCount = 0;
+        totalViolations = 0;
+        totalMesurements = paymentPeriod / mesurePeriod;
+        //disponibility10 = 99; //Usualmente 99 Porciento de disponibilidad para compensar 10%
+        //disponibility30 = 90; //Usualmente  90 Porciento de disponibilidad para compensar 30%
+        currentDebt = 0;
     }
 
     /** API Consumer Functions */
     /************************* */
+    //this function is used by chainlink automation every "mesurePeriod"
     function requestVolumeData() public returns (bytes32 requestId) {
         Chainlink.Request memory req = buildChainlinkRequest(
             jobId,
@@ -107,9 +139,16 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     ) public recordChainlinkFulfillment(_requestId) {
         emit RequestVolume(_requestId, _volume);
         volume = _volume;
-        extractParams(volume);
-
-        //Check Violations
+        //Funcionality added different from API Consumer
+        (
+            uint latency,
+            uint througput,
+            uint jitter,
+            uint bandwith
+        ) = extractParams(volume);
+        checkViolations(latency, througput, jitter, bandwith);
+        //calculate penalty if paymentPeriod (set to a month) is reached due to only one automation is used
+        //Esta funcion se ejecuta si han pasado payment period
     }
 
     function withdrawLink() public onlyOwner {
@@ -156,11 +195,73 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         return (params[0], params[1], params[2], params[3]);
     }
 
-    /**Conditions Checks */
+    /**Checks Violations
+     * Return bool when find violation
+     */
+    function checkViolations(
+        uint256 latency,
+        uint256 througput,
+        uint256 jitter,
+        uint256 bandwith
+    ) public returns (bool) {
+        bool latencyExceeded = (latency > maxlatency);
+        bool througputInsuficient = (througput < minthroughput);
+        bool jitterExceeded = (jitter > maxJitter);
+        bool bandwithInsuficient = (bandwith < minBandWith);
+        bool setViolation = latencyExceeded ||
+            througputInsuficient ||
+            jitterExceeded ||
+            bandwithInsuficient;
+        if (setViolation) {
+            violationsPaymentPeriodCount += 1;
+        }
+        return setViolation;
+    }
+
+    /** Calculate penalties every measure period */
+    function calculatePenalties() public returns (uint256) {
+        uint penalty = 0;
+        disponibilityCalculated =
+            ((totalMesurements - violationsPaymentPeriodCount) * 100) /
+            totalMesurements; //percent of compliance
+        //Compare with established compliance to set compensation
+        if (
+            disponibilityCalculated < disponibility10 &&
+            disponibilityCalculated >= disponibility30
+        ) {
+            penalty = (10 * monthlyPayment) / 100; //10 percent compensation
+        }
+        if (disponibilityCalculated < disponibility30) {
+            penalty = (30 * monthlyPayment) / 100; //30 percent compensation
+        }
+        return penalty;
+    }
+
+    function checkContractEnd(uint _penalty) public {
+        if (block.timestamp > endDate) {
+            currentDebt -= _penalty;
+            setContractEnd();
+            //still not paid, i meant payment pendent
+        }
+    }
+
+    /** This function most by called every paymentPeriod
+     * at leats untill the contract end
+     */
+    function setClientDebth(uint256 _penalty) internal {
+        currentDebt += monthlyPayment - _penalty;
+        totalViolations += violationsPaymentPeriodCount;
+        violationsPaymentPeriodCount = 0;
+    }
+
+    function payDebth() public payable {
+        //(P) condicion de que si paga toda la deuda es que se establece el contrato como pagado
+    }
 
     /** Setters */
     //This function can be called by auction when the auction end without bids
-    function setContractEnd() external {
+    function setContractEnd() public {
+        //(P) poner condicion de que solo se puede llamar por auction y el propio contrato (internal y external modifier conflic)
         //Only can by called if the contract is inactive
         if (activeContract) revert SLA_SLACanEndByAuctionBecauseIsActive();
         //hacer pagos finales
@@ -180,7 +281,9 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         if (activeContract) revert SLA_SLAAlredyActive();
         client = _client;
         activeContract = true;
-        montlyPayment = _montlyPayment;
+        monthlyPayment = _montlyPayment;
+        startDate = block.timestamp;
+        lastPaymentCut = block.timestamp;
     }
 
     /**getters */
@@ -217,15 +320,37 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     }
 
     function getMontlyPayment() external view returns (uint256) {
-        return montlyPayment;
+        return monthlyPayment;
     }
 }
 
 /*Actividades para SC SLA:
 1. Add SLA Parameters X
 2. Funcion que añada un cliente al contrato. Esta función solo se puede llamar por el contrato Auction X
+    Esta funcion activa el contrato X
+    Fija el pago mensual X
+    Añade al cliente X   
+    Fija el inicio del contrato (testing pendent)
+    Determina la primera fecha de pago (testing pendent)
+
 3. Función para obtener metricas de la api
-    Ajustar herencia de SLA para que se comporte como API Consumer
+    Integrar api consumer a SLA X
+    Funcion para extraer los parámetros 4 parametros latencia, througput ... de un string X
+
+4. Funcion para Chequear violaciones X
+        Pensar en añadir evento que diga que parámetro due violado
+
+5. Funcion Para Calcular penalidades
+6. Funcion para fijar actualizar deuda y deuda en terminacion de contrato
+
+
+
+//check Violations
+//Calculate penalties (Leer Enabling Dynamic SLA Compensation Using Blockchain-based Smart Contracts)
+//Envío de fondos
+//Terminacion
+
+
 
 
 4. Al terminarse el contrato se deben descontar las penalizaciones y sumar recompensas.

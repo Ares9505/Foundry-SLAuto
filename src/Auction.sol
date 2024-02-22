@@ -129,4 +129,5 @@ contract Auction {
  * Cambiar a private todas la variables
  * Restringir Auction end a el chainlink keepers para ser llamada
  * Fix events auctionEnded, create other events
+ * Change to automatic transfer to provider
  */
