@@ -322,7 +322,15 @@ contract testMarket is Test {
         );
     }
 
-    function testAuctionStartAfterCustomSLAset() public {
+    /** Auction - SLA Interactions for test
+     * ********************************
+     */
+    /**For CreateCustomSLA
+     *Simulate interaction of create SLA and fill it, when fill it an Auction most be created */
+    function createSLAAndFillKPIandKQIs()
+        public
+        returns (address /**slaAddress */, address /**auctionAddress */)
+    {
         address owner = market.getOwner();
         vm.prank(owner);
         address slaAddress = market.createCustomSLA(
@@ -357,122 +365,99 @@ contract testMarket is Test {
             PAYMENTPERIOD,
             BIDDINGTIME
         );
-        console.log(auctionAddress);
+        return (slaAddress, auctionAddress);
     }
 
-    // function testAuctionCreationAtBeforeSLACreation() public {
-    //     address owner = market.getOwner();
-    //     vm.prank(owner);
-    //     (, address auctionAddress) = market.createCustomSLA(
-    //         "0x29303039",
-    //         10,
-    //         10,
-    //         10,
-    //         10,
-    //         "http://example.com",
-    //         10
-    //     );
-    //     console.log("La direccion de la subasta es: ", auctionAddress);
-    // }
+    //Commons to Custom SLA and Fixed SLA
+    function setBiddingTimeEnd() public {
+        vm.warp(block.timestamp + BIDDINGTIME + 1);
+        vm.roll(block.number + 1);
+    }
 
-    // /** Auction - SLA Interactions for test
-    //  * ********************************
-    //  */
-    // function ownwerCreateContract() public returns (address, address) {
-    //     ownerAddress = market.getOwner(); //the owner is a provider that's why he can create an SLA
-    //     vm.prank(ownerAddress);
-    //     (address slaAddress, address auctionAddress) = market.createCustomSLA(
-    //         DOCHASH,
-    //         MAXLATENCY,
-    //         MINTHROUGHPUT,
-    //         MAXJITTER,
-    //         MINBANDWITH,
-    //         ENDPOINT,
-    //         BIDDINGTIME
-    //     );
-    //     return (slaAddress, auctionAddress);
-    // }
-
-    // function setBiddingTimeEnd() public {
-    //     vm.warp(block.timestamp + BIDDINGTIME + 1);
-    //     vm.roll(block.number + 1);
-    // }
-
-    // function client1Bid() public {}
+    /**Test SLA - Auction Flow test */
+    function testAuctionStartAfterCustomSLAset() public {
+        (, address auctionAddress) = createSLAAndFillKPIandKQIs();
+        console.log("LA direccion de la subasta es: ", auctionAddress);
+    }
 
     // /**Test SLA - Auction Flows
     //  * *************************
     //  */
 
-    // function testAuctionEndNotAllowedBeforeBiddingTimeEnd() public {
-    //     (, address auctionAddress) = testMarket.ownwerCreateContract();
-    //     vm.expectRevert();
-    //     Auction(auctionAddress).auctionEnd();
-    // }
+    function testAuctionEndNotAllowedBeforeBiddingTimeEnd() public {
+        (, address auctionAddress) = createSLAAndFillKPIandKQIs();
+        vm.expectRevert();
+        Auction(auctionAddress).auctionEnd();
+    }
 
-    // function testEndSLAFromAuctionWhenNoBidsInBiddingTime() public {
-    //     //Create Contract
-    //     (address slaAddress, address auctionAddress) = testMarket
-    //         .ownwerCreateContract();
+    function testEndSLAFromAuctionWhenNoBidsInBiddingTime() public {
+        //Create Contract
+        (
+            address slaAddress,
+            address auctionAddress
+        ) = createSLAAndFillKPIandKQIs();
 
-    //     //Set auction time ended
-    //     testMarket.setBiddingTimeEnd();
+        //Set auction time ended
+        testMarket.setBiddingTimeEnd();
 
-    //     //Call auctionEnd
-    //     Auction(auctionAddress).auctionEnd();
+        //Call auctionEnd
+        Auction(auctionAddress).auctionEnd();
 
-    //     //assert SLA ended correctly
-    //     bool contractEnded = SLA(slaAddress).getContractEnded();
-    //     assert(contractEnded);
-    // }
+        //assert SLA ended correctly
+        bool contractEnded = SLA(slaAddress).getContractEnded();
+        assert(contractEnded);
+    }
 
-    // function testRevertEndSLAWhenIsAlreadyEnded() public {
-    //     //Create Contract
-    //     (, address auctionAddress) = testMarket.ownwerCreateContract();
+    function testRevertEndSLAWhenIsAlreadyEnded() public {
+        //Create Contract
+        (, address auctionAddress) = createSLAAndFillKPIandKQIs();
 
-    //     //Set auction time ended
-    //     testMarket.setBiddingTimeEnd();
+        //Set auction time ended
+        testMarket.setBiddingTimeEnd();
 
-    //     //Call auctionEnd
-    //     Auction(auctionAddress).auctionEnd();
-    //     vm.expectRevert();
-    //     Auction(auctionAddress).auctionEnd();
-    //     //
-    // }
+        //Call auctionEnd
+        Auction(auctionAddress).auctionEnd();
+        vm.expectRevert();
+        Auction(auctionAddress).auctionEnd();
+        //
+    }
 
-    // /**  After SLA Creation, Clients bids, and Auction End the highestbid most
-    //  * by transfer to the beneficiary and the SLA most be set to active
-    //  */
-    // function testTransferMoneyToBeneficiaryAndSLAActivationWhenAuctionEndWithHighestBidder()
-    //     public
-    // {
-    //     //Arrenge
-    //     (address slaAddress, address auctionAddress) = testMarket
-    //         .ownwerCreateContract();
+    /**  After SLA Creation, Clients bids, and Auction End the highestbid most
+     * by transfer to the beneficiary and the SLA most be set to active
+     */
+    function testTransferMoneyToBeneficiaryAndSLAActivationWhenAuctionEndWithHighestBidder()
+        public
+    {
+        ownerAddress = market.getOwner();
+        //Arrenge
+        (
+            address slaAddress,
+            address auctionAddress
+        ) = createSLAAndFillKPIandKQIs();
 
-    //     /** Act */
-    //     //Cient1 and 2 make bids
-    //     vm.prank(CLIENT_1);
-    //     uint256 bidAmount1 = 0.1 ether;
-    //     Auction(auctionAddress).bid{value: bidAmount1}();
+        /** Act */
+        //Cient1 and 2 make bids
+        vm.prank(CLIENT_1);
+        uint256 bidAmount1 = 0.1 ether;
+        Auction(auctionAddress).bid{value: bidAmount1}();
 
-    //     vm.prank(CLIENT_1);
-    //     uint256 bidAmount2 = 0.3 ether;
-    //     Auction(auctionAddress).bid{value: bidAmount2}();
-    //     testMarket.setBiddingTimeEnd();
+        vm.prank(CLIENT_1);
+        uint256 bidAmount2 = 0.3 ether;
+        Auction(auctionAddress).bid{value: bidAmount2}();
+        testMarket.setBiddingTimeEnd();
 
-    //     //Set auctionEnd
-    //     uint256 ownerBalanceBeforeAuctionEnd = ownerAddress.balance;
-    //     Auction(auctionAddress).auctionEnd();
+        //Set auctionEnd
+        uint256 ownerBalanceBeforeAuctionEnd = ownerAddress.balance;
+        Auction(auctionAddress).auctionEnd();
 
-    //     //Get auction end states
-    //     uint256 ownerBalance = ownerAddress.balance;
-    //     uint256 highestBid = Auction(auctionAddress).getHighestbid();
+        //Get auction end states
+        uint256 ownerBalance = ownerAddress.balance;
+        uint256 highestBid = Auction(auctionAddress).getHighestbid();
 
-    //     //Assert Money transfer to Owner and SLA Activation
-    //     assert(highestBid == ownerBalance - ownerBalanceBeforeAuctionEnd);
-    //     bool activeContract = SLA(slaAddress).getSlaActivationState();
-    //     assert(activeContract);
-    //     console.log("Monthly payment: ", SLA(slaAddress).getMontlyPayment());
-    // }
+        //Assert Money transfer to Owner and SLA Activation
+        assert(highestBid == ownerBalance - ownerBalanceBeforeAuctionEnd);
+        bool activeContract = SLA(slaAddress).getSlaActivationState();
+        assert(activeContract);
+        console.log("Monthly payment: ", SLA(slaAddress).getMontlyPayment());
+    }
 }
