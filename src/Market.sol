@@ -42,7 +42,8 @@ contract Market {
         string memory _docHash,
         uint256[22] memory _params,
         string memory _endpoint,
-        uint256 _biddingTime
+        uint256 _biddingTime,
+        uint256 _startValue
     )
         public
         onlyProvider
@@ -60,7 +61,8 @@ contract Market {
         Auction newAuction = new Auction(
             _biddingTime,
             payable(msg.sender),
-            payable(address(newSLA))
+            payable(address(newSLA)),
+            _startValue
         );
         return (address(newSLA), address(newAuction));
     }

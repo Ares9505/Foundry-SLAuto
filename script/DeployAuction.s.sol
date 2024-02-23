@@ -10,6 +10,7 @@ contract DeployAuction is Script {
 
     //Auction constructor parameters
     uint256 constant biddingTime = 1 days;
+    uint256 constant startValue = 0.01 ether;
     address payable beneficiary;
     address slaAddress = makeAddr("SLA");
 
@@ -18,7 +19,7 @@ contract DeployAuction is Script {
         beneficiary = payable(msg.sender);
         console.log("The beneficiary is: ", beneficiary);
         console.log("Sla Address is: ", slaAddress);
-        auction = new Auction(biddingTime, beneficiary, slaAddress);
+        auction = new Auction(biddingTime, beneficiary, slaAddress, startValue);
         console.log("Auction constructor caller: ", msg.sender); //quiero ver quien es el que llama al constructor
         vm.stopBroadcast();
         return auction;

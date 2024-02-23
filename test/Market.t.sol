@@ -48,6 +48,7 @@ contract testMarket is Test {
     uint256 constant PAYMENTPERIOD = 4 weeks;
     //Auction Param
     uint256 constant BIDDINGTIME = 1 days;
+    uint256 constant STARTVALUE = 0.02 ether;
 
     //**Client interaction variables */
     address public CLIENT_1 = makeAddr("client1");
@@ -95,7 +96,8 @@ contract testMarket is Test {
                 uint256(PAYMENTPERIOD)
             ],
             ENDPOINT,
-            BIDDINGTIME
+            BIDDINGTIME,
+            STARTVALUE
         );
 
         return (slaAddress, auctionAddress);

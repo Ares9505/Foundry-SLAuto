@@ -11,6 +11,7 @@ contract AuctionTest is Test {
     address public CLIENT_2 = makeAddr("client2");
     address public CLIENT_3 = makeAddr("client3");
     uint256 public biddingTime = 1 days;
+    uint256 public startValue = 0.01 ether;
     uint256 public constant STARTING_BALANCE = 100 ether;
 
     function setUp() external {
@@ -25,9 +26,16 @@ contract AuctionTest is Test {
         console.log("Auction deployment done");
     }
 
+    function testBidLowerThanStartValue() public {
+        vm.prank(CLIENT_1);
+        uint256 bidAmount = 0.0001 ether;
+        vm.expectRevert();
+        auction.bid{value: bidAmount}();
+    }
+
     function testBidLowerThanHighestBidGetReverted() public {
         vm.prank(CLIENT_1);
-        uint256 bidAmount = 0;
+        uint256 bidAmount = 0.001 ether;
         vm.expectRevert();
         auction.bid{value: bidAmount}();
     }
