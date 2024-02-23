@@ -17,34 +17,36 @@ contract testMarket is Test {
 
     /**SLA Creation Parameters */
     string constant DOCHASH = "0x29303039";
+
+    /**SLA PARAMETER LIST */
+    //==============================
+    uint256 constant MINLATENCY = 10;
     uint256 constant MAXLATENCY = 10;
     uint256 constant MINTHROUGHPUT = 10;
     uint256 constant MAXJITTER = 10;
     uint256 constant MINBANDWITH = 10;
     string constant ENDPOINT = "http://example.com";
-
     /**SLA Seconds KPI Params */
     uint256 constant BIT_RATE = 100; // Mbps
     uint256 constant MAX_PACKET_LOSS = 2;
-    //uint256 constant PEAK_DATA_RATE_UL = 5;
-    //uint256 constant PEAK_DATA_RATE_DL = 10;
-    //uint256 constant MIN_MOBILITY = 20; // km/h
+    uint256 constant PEAK_DATA_RATE_UL = 5;
+    uint256 constant PEAK_DATA_RATE_DL = 10;
+    uint256 constant MIN_MOBILITY = 20; // km/h
     uint256 constant MAX_MOBILITY = 50; // km/h
     uint256 constant SERVICE_RELIABILITY = 99; // Po
-
     /**SLA KQI Params */
     uint256 constant MAX_SURVIVAL_TIME = 1000;
     uint256 constant MIN_SURVIVAL_TIME = 500;
-    //uint256 constant EXPERIENCE_DATA_RATE_DL = 50;
-    //uint256 constant EXPERIENCE_DATA_RATE_UL = 20;
+    uint256 constant EXPERIENCE_DATA_RATE_DL = 50;
+    uint256 constant EXPERIENCE_DATA_RATE_UL = 20;
     uint256 constant MAX_INTERRUPTION_TIME = 200;
     uint256 constant MIN_INTERRUPTION_TIME = 100;
-
+    /**SLA Monitoring PArams */
     uint256 constant DISPONIBILITY10 = 99;
     uint256 constant DISPONIBILITY30 = 90;
     uint256 constant MESUREPERIOD = 1 minutes;
-    uint256 constant PAYMENTPERIOD = 4 weeks; //Auction Param
-
+    uint256 constant PAYMENTPERIOD = 4 weeks;
+    //Auction Param
     uint256 constant BIDDINGTIME = 1 days;
 
     //**Client interaction variables */
@@ -61,30 +63,64 @@ contract testMarket is Test {
         vm.deal(CLIENT_3, STARTING_BALANCE);
     }
 
+    /** Auxiliar createSLA function */
+    function createSLA()
+        public
+        returns (address /**sla address */, address /*auction address* */)
+    {
+        (address slaAddress, address auctionAddress) = market.createCustomSLA(
+            DOCHASH,
+            [
+                uint256(MINLATENCY),
+                uint256(MAXLATENCY),
+                uint256(MINTHROUGHPUT),
+                uint256(MAXJITTER),
+                uint256(MINBANDWITH),
+                uint256(BIT_RATE),
+                uint256(MAX_PACKET_LOSS),
+                uint256(PEAK_DATA_RATE_UL),
+                uint256(PEAK_DATA_RATE_DL),
+                uint256(MIN_MOBILITY),
+                uint256(MAX_MOBILITY),
+                uint256(SERVICE_RELIABILITY),
+                uint256(MAX_SURVIVAL_TIME),
+                uint256(MIN_SURVIVAL_TIME),
+                uint256(EXPERIENCE_DATA_RATE_DL),
+                uint256(EXPERIENCE_DATA_RATE_UL),
+                uint256(MAX_INTERRUPTION_TIME),
+                uint256(MIN_INTERRUPTION_TIME),
+                uint256(DISPONIBILITY10),
+                uint256(DISPONIBILITY30),
+                uint256(MESUREPERIOD),
+                uint256(PAYMENTPERIOD)
+            ],
+            ENDPOINT,
+            BIDDINGTIME
+        );
+
+        return (slaAddress, auctionAddress);
+    }
+
+    function ownerCreateSLA()
+        public
+        returns (address /**sla address */, address /** auction address*/)
+    {
+        address owner = market.getOwner();
+        vm.prank(owner);
+        (address slaAddress, address auctionAddress) = createSLA();
+        return (slaAddress, auctionAddress);
+    }
+
+    /**Test */
+    //==================================
     function testOnlynNotProviderCantCreateSLA() public {
         vm.prank(NOT_PROVIDER);
         vm.expectRevert();
-        market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
+        createSLA();
     }
 
     function testOwnerCanCreateSLA() public {
-        address owner = market.getOwner();
-        vm.prank(owner);
-        market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
+        ownerCreateSLA();
     }
 
     function testNotProviderCanAddProvider() public {
@@ -110,292 +146,37 @@ contract testMarket is Test {
     function testSLAinactiveBeforeCreation() public {
         address owner = market.getOwner();
         vm.prank(owner);
-        address slaAddress = market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
+        (address slaAddress, ) = createSLA();
         bool activationState = SLA(slaAddress).getSlaActivationState();
         assert(activationState == false);
     }
 
-    function testSLAOwnerCanSetKPIs() public {
-        address owner = market.getOwner();
-        vm.prank(owner);
-        address slaAddress = market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
-        vm.prank(owner);
-        market.setSLAParamsKPIsSecondBatch(
-            slaAddress,
-            BIT_RATE,
-            MAX_PACKET_LOSS,
-            //PEAK_DATA_RATE_UL,
-            //PEAK_DATA_RATE_DL,
-            //MIN_MOBILITY,
-            MAX_MOBILITY, // km/h
-            SERVICE_RELIABILITY
-        );
-    }
-
-    function testSLANotProviderCantSetKPIs() public {
-        address owner = market.getOwner();
-        vm.prank(owner);
-        address slaAddress = market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
-        vm.prank(address(market));
-        vm.expectRevert();
-        market.setSLAParamsKPIsSecondBatch(
-            slaAddress,
-            BIT_RATE,
-            MAX_PACKET_LOSS,
-            //PEAK_DATA_RATE_UL,
-            //PEAK_DATA_RATE_DL,
-            //MIN_MOBILITY,
-            MAX_MOBILITY, // km/h
-            SERVICE_RELIABILITY
-        );
-    }
-
-    function testSetSLAKPIsCantByCalledTwoice() public {
-        address owner = market.getOwner();
-        vm.prank(owner);
-        address slaAddress = market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
-        vm.prank(owner);
-        market.setSLAParamsKPIsSecondBatch(
-            slaAddress,
-            BIT_RATE,
-            MAX_PACKET_LOSS,
-            //PEAK_DATA_RATE_UL,
-            //PEAK_DATA_RATE_DL,
-            //MIN_MOBILITY,
-            MAX_MOBILITY, // km/h
-            SERVICE_RELIABILITY
-        );
-        vm.prank(owner);
-        vm.expectRevert();
-        market.setSLAParamsKPIsSecondBatch(
-            slaAddress,
-            BIT_RATE,
-            MAX_PACKET_LOSS,
-            //PEAK_DATA_RATE_UL,
-            //PEAK_DATA_RATE_DL,
-            //MIN_MOBILITY,
-            MAX_MOBILITY, // km/h
-            SERVICE_RELIABILITY
-        );
-    }
-
-    function testSLAOwnerCanSetKQIs() public {
-        address owner = market.getOwner();
-        vm.prank(owner);
-        address slaAddress = market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
-        vm.prank(owner);
-        market.setSLAParamsKPIsSecondBatch(
-            slaAddress,
-            BIT_RATE,
-            MAX_PACKET_LOSS,
-            //PEAK_DATA_RATE_UL,
-            //PEAK_DATA_RATE_DL,
-            //MIN_MOBILITY,
-            MAX_MOBILITY, // km/h
-            SERVICE_RELIABILITY
-        );
-        vm.prank(owner);
-        market.setSLAParamsKQIs(
-            slaAddress,
-            MAX_SURVIVAL_TIME,
-            MIN_SURVIVAL_TIME,
-            MAX_INTERRUPTION_TIME,
-            MIN_INTERRUPTION_TIME,
-            DISPONIBILITY10,
-            DISPONIBILITY30,
-            MESUREPERIOD,
-            PAYMENTPERIOD,
-            BIDDINGTIME
-        );
-    }
-
-    function testSLAOwnerCanNOTBeSetKQIsTwoice() public {
-        address owner = market.getOwner();
-        vm.prank(owner);
-        address slaAddress = market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
-        vm.prank(owner);
-        market.setSLAParamsKPIsSecondBatch(
-            slaAddress,
-            BIT_RATE,
-            MAX_PACKET_LOSS,
-            //PEAK_DATA_RATE_UL,
-            //PEAK_DATA_RATE_DL,
-            //MIN_MOBILITY,
-            MAX_MOBILITY, // km/h
-            SERVICE_RELIABILITY
-        );
-        vm.prank(owner);
-        market.setSLAParamsKQIs(
-            slaAddress,
-            MAX_SURVIVAL_TIME,
-            MIN_SURVIVAL_TIME,
-            MAX_INTERRUPTION_TIME,
-            MIN_INTERRUPTION_TIME,
-            DISPONIBILITY10,
-            DISPONIBILITY30,
-            MESUREPERIOD,
-            PAYMENTPERIOD,
-            BIDDINGTIME
-        );
-        vm.prank(owner);
-        vm.expectRevert();
-        market.setSLAParamsKQIs(
-            slaAddress,
-            MAX_SURVIVAL_TIME,
-            MIN_SURVIVAL_TIME,
-            MAX_INTERRUPTION_TIME,
-            MIN_INTERRUPTION_TIME,
-            DISPONIBILITY10,
-            DISPONIBILITY30,
-            MESUREPERIOD,
-            PAYMENTPERIOD,
-            BIDDINGTIME
-        );
-    }
-
-    function testCantSetKQIsBeforeKPIs() public {
-        address owner = market.getOwner();
-        vm.prank(owner);
-        address slaAddress = market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
-        vm.prank(owner);
-        vm.expectRevert();
-        market.setSLAParamsKQIs(
-            slaAddress,
-            MAX_SURVIVAL_TIME,
-            MIN_SURVIVAL_TIME,
-            MAX_INTERRUPTION_TIME,
-            MIN_INTERRUPTION_TIME,
-            DISPONIBILITY10,
-            DISPONIBILITY30,
-            MESUREPERIOD,
-            PAYMENTPERIOD,
-            BIDDINGTIME
-        );
-    }
-
-    /** Auction - SLA Interactions for test
-     * ********************************
-     */
-    /**For CreateCustomSLA
-     *Simulate interaction of create SLA and fill it, when fill it an Auction most be created */
-    function createSLAAndFillKPIandKQIs()
-        public
-        returns (address /**slaAddress */, address /**auctionAddress */)
-    {
-        address owner = market.getOwner();
-        vm.prank(owner);
-        address slaAddress = market.createCustomSLA(
-            DOCHASH,
-            MAXLATENCY,
-            MINTHROUGHPUT,
-            MAXJITTER,
-            MINBANDWITH,
-            ENDPOINT
-        );
-        vm.prank(owner);
-        market.setSLAParamsKPIsSecondBatch(
-            slaAddress,
-            BIT_RATE,
-            MAX_PACKET_LOSS,
-            //PEAK_DATA_RATE_UL,
-            //PEAK_DATA_RATE_DL,
-            //MIN_MOBILITY,
-            MAX_MOBILITY, // km/h
-            SERVICE_RELIABILITY
-        );
-        vm.prank(owner);
-        address auctionAddress = market.setSLAParamsKQIs(
-            slaAddress,
-            MAX_SURVIVAL_TIME,
-            MIN_SURVIVAL_TIME,
-            MAX_INTERRUPTION_TIME,
-            MIN_INTERRUPTION_TIME,
-            DISPONIBILITY10,
-            DISPONIBILITY30,
-            MESUREPERIOD,
-            PAYMENTPERIOD,
-            BIDDINGTIME
-        );
-        return (slaAddress, auctionAddress);
-    }
-
+    /**Auxiliar function */
     //Commons to Custom SLA and Fixed SLA
     function setBiddingTimeEnd() public {
         vm.warp(block.timestamp + BIDDINGTIME + 1);
         vm.roll(block.number + 1);
     }
 
-    /**Test SLA - Auction Flow test */
+    //     /**Test SLA - Auction Flow test */
     function testAuctionStartAfterCustomSLAset() public {
-        (, address auctionAddress) = createSLAAndFillKPIandKQIs();
+        (, address auctionAddress) = ownerCreateSLA();
         console.log("LA direccion de la subasta es: ", auctionAddress);
     }
 
-    // /**Test SLA - Auction Flows
-    //  * *************************
-    //  */
+    //     // /**Test SLA - Auction Flows
+    //     //  * *************************
+    //     //  */
 
     function testAuctionEndNotAllowedBeforeBiddingTimeEnd() public {
-        (, address auctionAddress) = createSLAAndFillKPIandKQIs();
+        (, address auctionAddress) = ownerCreateSLA();
         vm.expectRevert();
         Auction(auctionAddress).auctionEnd();
     }
 
     function testEndSLAFromAuctionWhenNoBidsInBiddingTime() public {
         //Create Contract
-        (
-            address slaAddress,
-            address auctionAddress
-        ) = createSLAAndFillKPIandKQIs();
+        (address slaAddress, address auctionAddress) = ownerCreateSLA();
 
         //Set auction time ended
         testMarket.setBiddingTimeEnd();
@@ -410,7 +191,7 @@ contract testMarket is Test {
 
     function testRevertEndSLAWhenIsAlreadyEnded() public {
         //Create Contract
-        (, address auctionAddress) = createSLAAndFillKPIandKQIs();
+        (, address auctionAddress) = ownerCreateSLA();
 
         //Set auction time ended
         testMarket.setBiddingTimeEnd();
@@ -430,10 +211,7 @@ contract testMarket is Test {
     {
         ownerAddress = market.getOwner();
         //Arrenge
-        (
-            address slaAddress,
-            address auctionAddress
-        ) = createSLAAndFillKPIandKQIs();
+        (address slaAddress, address auctionAddress) = ownerCreateSLA();
 
         /** Act */
         //Cient1 and 2 make bids

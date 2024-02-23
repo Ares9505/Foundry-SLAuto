@@ -38,6 +38,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     uint private constant contractDuration = 365 days; //usualmente un año
 
     //SLA parameters thresholds
+    uint256 private minlatency;
     uint256 private maxlatency;
     uint256 private minthroughput;
     uint256 private maxJitter;
@@ -48,19 +49,23 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     uint256 private maxPacketLoos;
     uint256 private peakDataRateUL;
     uint256 private peakDataRateDL;
-    //uint256 private minMobility;
+    uint256 private minMobility;
     uint256 private maxMobility;
     uint256 private serviceReliability;
-    bool setKPIsSuccess;
 
     //SLA KQI thresholds
     uint256 private maxSurvivalTime;
     uint256 private minSurvivalTime;
-    //uint256 private experienceDataRateDL;
-    //uint256 private experienceDataRateUL;
+    uint256 private experienceDataRateDL;
+    uint256 private experienceDataRateUL;
     uint256 private maxInterruptionTime;
     uint256 private minInterrumptionTime;
-    bool setKQIsSuccess;
+
+    //MonitingParams
+    uint256 private disponibility10;
+    uint256 private disponibility30;
+    uint256 private mesurePeriod;
+    uint256 private paymentPeriod; //monthly
 
     //Not needed to retrive
     string private endpoint;
@@ -83,12 +88,6 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     uint256 private disponibilityCalculated; //Calculeted monthly
     uint256 private currentDebt;
 
-    //MonitingParams
-    uint256 private disponibility10;
-    uint256 private disponibility30;
-    uint256 private mesurePeriod;
-    uint256 private paymentPeriod; //monthly
-
     //termination variables
     bool private endPaid; //Tell if the entire contract was paid
     //Contract End , alredy declared
@@ -102,10 +101,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         string memory _providerName,
         address _providerAddress,
         string memory _docHash,
-        uint256 _maxlatency,
-        uint256 _minthroughput,
-        uint256 _maxJitter,
-        uint256 _minBandWith,
+        uint256[22] memory _params,
         string memory _endpoint
     )
         //Set disponibility
@@ -114,18 +110,36 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         providerName = _providerName;
         providerAddress = _providerAddress;
         docHash = _docHash;
-        maxlatency = _maxlatency;
-        minthroughput = _minthroughput;
-        maxJitter = _maxJitter;
-        minBandWith = _minBandWith;
+
+        //SLA Params
+        minlatency = _params[0];
+        maxlatency = _params[1];
+        minthroughput = _params[2];
+        maxJitter = _params[3];
+        minBandWith = _params[4];
+        bitRate = _params[5];
+        maxPacketLoos = _params[6];
+        peakDataRateUL = _params[7];
+        peakDataRateDL = _params[8];
+        minMobility = _params[9];
+        maxMobility = _params[10];
+        serviceReliability = _params[11];
+        maxSurvivalTime = _params[12];
+        minSurvivalTime = _params[13];
+        experienceDataRateDL = _params[14];
+        experienceDataRateUL = _params[15];
+        maxInterruptionTime = _params[16];
+        minInterrumptionTime = _params[17];
+        //monitoring params
+        disponibility10 = _params[18];
+        disponibility30 = _params[19];
+        mesurePeriod = _params[20];
+        paymentPeriod = _params[21];
+
         endpoint = _endpoint;
         activeContract = false;
         contractEnded = false;
         //needed for penalties calculation and termination
-
-        //seting not complete parameters
-        setKPIsSuccess = false;
-        setKQIsSuccess = false;
 
         //API Consumer Params
         setChainlinkToken(0x779877A7B0D9E8603169DdbD7836e478b4624789);
@@ -288,63 +302,50 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
 
     /** Setters */
 
-    function setSLAParamsKPIsSecondBatch(
-        address _providerAddress,
-        uint256 _bitRate,
-        uint256 _maxPacketLoos,
-        //uint256 _peakDataRateUL,
-        //uint256 _peakDataRateDL,
-        //uint256 _minMobility,
-        uint256 _maxMobility,
-        uint256 _serviceReliability
-    ) public {
-        if (_providerAddress != providerAddress) revert SLA_InvalidProvider();
-        if (!setKPIsSuccess) {
-            bitRate = _bitRate;
-            maxPacketLoos = _maxPacketLoos;
-            //peakDataRateUL =  _peakDataRateUL,
-            //peakDataRateDL =  _peakDataRateDL,
-            //minMobility    =  _minMobility,
-            maxMobility = _maxMobility;
-            serviceReliability = _serviceReliability;
-            setKPIsSuccess = true;
-        } else revert SLA_KPIsAlreadyset();
-    }
+    // function setSLAParamsKPIsSecondBatch(
+    //     address _providerAddress,
+    //     uint256 _bitRate,
+    //     uint256 _maxPacketLoos,
+    //     //uint256 _peakDataRateUL,
+    //     //uint256 _peakDataRateDL,
+    //     //uint256 _minMobility,
+    //     uint256 _maxMobility,
+    //     uint256 _serviceReliability
+    // ) public {
+    //     if (_providerAddress != providerAddress) revert SLA_InvalidProvider();
+    //     if (!setKPIsSuccess) {
+    //         bitRate = _bitRate;
+    //         maxPacketLoos = _maxPacketLoos;
+    //         //peakDataRateUL =  _peakDataRateUL,
+    //         //peakDataRateDL =  _peakDataRateDL,
+    //         //minMobility    =  _minMobility,
+    //         maxMobility = _maxMobility;
+    //         serviceReliability = _serviceReliability;
+    //         setKPIsSuccess = true;
+    //     } else revert SLA_KPIsAlreadyset();
+    // }
 
-    function setSLAParamsKQIsParamsMonitoring(
-        address _providerAddress,
-        uint256 _maxSurvivalTime,
-        uint256 _minSurvivalTime,
-        //uint256 _experienceDataRateDL,
-        //uint256 _experienceDataRateUL,
-        uint256 _maxInterruptionTime,
-        uint256 _minInterrumptionTime,
-        //monitoring params
-        uint256 _disponibility10,
-        uint256 _disponibility30,
-        uint256 _mesurePeriod,
-        uint256 _paymentPeriod
-    ) public {
-        if (_providerAddress != providerAddress) revert SLA_InvalidProvider();
-        //set   KQIs
-        if (!setKPIsSuccess) revert SLA_KPIsMostBeSetFirst();
-        if (!setKQIsSuccess) {
-            maxSurvivalTime = _maxSurvivalTime;
-            minSurvivalTime = _minSurvivalTime;
-            //experienceDataRateDL = _experienceDataRateDL;
-            //experienceDataRateUL = _experienceDataRateUL;
-            maxInterruptionTime = _maxInterruptionTime;
-            minInterrumptionTime = _minInterrumptionTime;
-
-            disponibility10 = _disponibility10; //Usualmente 99 Porciento de disponibilidad para compensar 10%
-            disponibility30 = _disponibility30; //Usualmente  90 Porciento de disponibilidad para compensar 30%
-            mesurePeriod = _mesurePeriod;
-            paymentPeriod = _paymentPeriod;
-            totalMesurements = paymentPeriod / mesurePeriod;
-
-            setKQIsSuccess = true;
-        } else revert SLA_KQIsAlreadySet();
-    }
+    // function setSLAParamsKQIsParamsMonitoring(
+    //     address _providerAddress,
+    //     uint256 _maxSurvivalTime,
+    //     uint256 _minSurvivalTime,
+    //     //uint256 _experienceDataRateDL,
+    //     //uint256 _experienceDataRateUL,
+    //     uint256 _maxInterruptionTime,
+    //     uint256 _minInterrumptionTime,
+    //     //monitoring params
+    //     uint256 _disponibility10,
+    //     uint256 _disponibility30,
+    //     uint256 _mesurePeriod,
+    //     uint256 _paymentPeriod
+    // ) public {
+    //     if (_providerAddress != providerAddress) revert SLA_InvalidProvider();
+    //     //set   KQIs
+    //     if (!setKPIsSuccess) revert SLA_KPIsMostBeSetFirst();
+    //     if (!setKQIsSuccess) {
+    //         setKQIsSuccess = true;
+    //     } else revert SLA_KQIsAlreadySet();
+    // }
 
     //This function can be called by auction when the auction end without bids
     function setContractEnd() public {
