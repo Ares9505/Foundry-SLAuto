@@ -46,8 +46,10 @@ contract SLATest is Test {
     /******************* */
     //test extract params auxiliar function
     function testSuccessfullParamsExtraction() public view {
-        string memory data = "12,11,13,14";
-        sla.extractParams(data);
+        string
+            memory data = "12,11,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28";
+        uint256[18] memory params = sla.extractParams(data);
+        console.log(params[0], params[10]);
     }
 
     function testNoFitNumberOfParametersForExtraction() public {
@@ -60,7 +62,8 @@ contract SLATest is Test {
     }
 
     function testRevertForInvalidDigits() public {
-        string memory data = "A,19,B,13";
+        string
+            memory data = "A,19,B,13,15,16,17,18,19,20,21,22,23,24,25,26,27,28";
         vm.expectRevert(SLA.SLA_Str2UintInvalidDigit.selector);
         sla.extractParams(data);
     }
@@ -71,7 +74,8 @@ contract SLATest is Test {
         //Request Volume Data to Chainlink Oracle
         //Comented line 145 to evit transferAndCall Revert, Link transfer is not needed in test
         bytes32 request_id = sla.requestVolumeData();
-        string memory dummyVolume = "12452,1902,19002,1900";
+        string
+            memory dummyVolume = "12452,1902,19002,1900,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32";
         vm.prank(CHAINLINK_ORACLE_ADDRESS); //The caller most by the oracle address set in APIConsumerContract
         sla.fulfill(request_id, dummyVolume);
         console.log(dummyVolume);

@@ -37,35 +37,35 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     string private docHash;
     uint private constant contractDuration = 365 days; //usualmente un año
 
-    //SLA parameters thresholds
-    uint256 private minlatency;
-    uint256 private maxlatency;
-    uint256 private minthroughput;
-    uint256 private maxJitter;
-    uint256 private minBandWith;
+    // SLA parameters thresholds
+    uint256 private minlatency; // 0
+    uint256 private maxlatency; // 1
+    uint256 private minthroughput; // 2
+    uint256 private maxJitter; // 3
+    uint256 private minBandWith; // 4
 
-    //SLA 2nd batch KPIs thresholds
-    uint256 private bitRate;
-    uint256 private maxPacketLoos;
-    uint256 private peakDataRateUL;
-    uint256 private peakDataRateDL;
-    uint256 private minMobility;
-    uint256 private maxMobility;
-    uint256 private serviceReliability;
+    // SLA 2nd batch KPIs thresholds
+    uint256 private bitRate; // 5
+    uint256 private maxPacketLoos; // 6
+    uint256 private peakDataRateUL; // 7
+    uint256 private peakDataRateDL; // 8
+    uint256 private minMobility; // 9
+    uint256 private maxMobility; // 10
+    uint256 private serviceReliability; // 11
 
-    //SLA KQI thresholds
-    uint256 private maxSurvivalTime;
-    uint256 private minSurvivalTime;
-    uint256 private experienceDataRateDL;
-    uint256 private experienceDataRateUL;
-    uint256 private maxInterruptionTime;
-    uint256 private minInterrumptionTime;
+    // SLA KQI thresholds
+    uint256 private maxSurvivalTime; // 12
+    uint256 private minSurvivalTime; // 13
+    uint256 private experienceDataRateDL; // 14
+    uint256 private experienceDataRateUL; // 15
+    uint256 private maxInterruptionTime; // 16
+    uint256 private minInterrumptionTime; // 17
 
-    //MonitingParams
-    uint256 private disponibility10;
-    uint256 private disponibility30;
-    uint256 private mesurePeriod;
-    uint256 private paymentPeriod; //monthly
+    // MonitoringParams
+    uint256 private disponibility10; // 18
+    uint256 private disponibility30; // 19
+    uint256 private mesurePeriod; // 20
+    uint256 private paymentPeriod; // 21 // monthly
 
     //Not needed to retrive
     string private endpoint;
@@ -181,13 +181,13 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         emit RequestVolume(_requestId, _volume);
         volume = _volume;
         //Funcionality added different from API Consumer
-        (
-            uint latency,
-            uint througput,
-            uint jitter,
-            uint bandwith
-        ) = extractParams(volume);
-        checkViolations(latency, througput, jitter, bandwith);
+        // (
+        //     uint latency,
+        //     uint througput,
+        //     uint jitter,
+        //     uint bandwith
+        // ) = extractParams(volume);
+        // checkViolations(latency, througput, jitter, bandwith);
         //calculate penalty if paymentPeriod (set to a month) is reached due to only one automation is used
         //Esta funcion se ejecuta si han pasado payment period
     }
@@ -213,49 +213,50 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     /** Auxiliar Functions For Fullfillment */
     function extractParams(
         string memory rawData
-    )
-        public
-        pure
-        returns (
-            uint256 /**latency */,
-            uint256 /**througput */,
-            uint256 /**jitter */,
-            uint256 /**Bandwith */
-        )
-    {
+    ) public pure returns (uint256[18] memory) {
         strings.slice memory stringSlice = rawData.toSlice();
         strings.slice memory delim = ",".toSlice();
-        if (stringSlice.count(delim) != 3)
+        if (stringSlice.count(delim) != 17)
+            //17 = numero de parametros de SLA a extraer - 1
             revert SLA_NoFitNumberOfParamsForExtraction();
-        uint256[] memory params = new uint[](stringSlice.count(delim) + 1);
+        uint256[18] memory params; //= new uint[](stringSlice.count(delim) + 1);
         bool success;
         for (uint i = 0; i < params.length; i++) {
             string memory param = stringSlice.split(delim).toString();
             (params[i], success) = param.str2uint();
             if (!success) revert SLA_Str2UintInvalidDigit();
         }
-        return (params[0], params[1], params[2], params[3]);
+        return params;
     }
 
     /**Checks Violations
      * Return bool when find violation
      */
-    function checkViolations(
-        uint256 latency,
-        uint256 througput,
-        uint256 jitter,
-        uint256 bandwith
-    ) public returns (bool) {
-        bool latencyExceeded = (latency > maxlatency);
-        bool througputInsuficient = (througput < minthroughput);
-        bool jitterExceeded = (jitter > maxJitter);
-        bool bandwithInsuficient = (bandwith < minBandWith);
-        bool setViolation = latencyExceeded ||
-            througputInsuficient ||
-            jitterExceeded ||
-            bandwithInsuficient;
-        if (setViolation) {
+    function checkViolations(uint256[18] memory params) public returns (bool) {
+        bool setViolation = false;
+        if (maxMobility < params[10]) return setViolation;
+        if (
+            //minltency = parmams[0]
+            (maxlatency < params[1]) ||
+            (minthroughput > params[2]) ||
+            (maxJitter < params[3]) ||
+            (minBandWith > params[4]) ||
+            //bitRate = params[5]
+            (maxPacketLoos < params[6]) ||
+            // peakDataRateUL = params[7]
+            // peakDataRateDL = params[8]
+            // minMobility = params[9];
+            //maxMobility < params[10];
+            (serviceReliability > params[11]) ||
+            //(maxSurvivalTime < params[12]) ||
+            (minSurvivalTime > params[13]) ||
+            //experienceDataRateDL = params[14];
+            //experienceDataRateUL = params[15];
+            (maxInterruptionTime < params[16])
+            //minInterrumptionTime = params[17];
+        ) {
             violationsPaymentPeriodCount += 1;
+            setViolation = true;
         }
         return setViolation;
     }
