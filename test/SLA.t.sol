@@ -81,6 +81,8 @@ contract SLATest is Test {
         console.log(dummyVolume);
     }
 
+    
+
     //check Violations
     //Calculate penalties
     //Envío de fondos

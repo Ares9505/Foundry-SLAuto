@@ -17,6 +17,9 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     error SLA_InvalidProvider();
     error SLA_KQIsAlreadySet();
     error SLA_KPIsMostBeSetFirst();
+    error SLA_FailTransferToProvider();
+    error SLA_FailTransferToClient();
+    error SLA_SLACantByEndBeforeContractDuration();
 
     //API Consumer variables
     using Chainlink for Chainlink.Request;
@@ -35,7 +38,6 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     string private providerName;
     address private providerAddress;
     string private docHash;
-    uint private constant contractDuration = 365 days; //usualmente un año
 
     // SLA parameters thresholds
     uint256 private minlatency; // 0
@@ -65,7 +67,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     uint256 private disponibility10; // 18
     uint256 private disponibility30; // 19
     uint256 private mesurePeriod; // 20
-    uint256 private paymentPeriod; // 21 // monthly
+    uint256 private contractDuration; // 21 //un año usualmente
 
     //Not needed to retrive
     string private endpoint;
@@ -75,17 +77,17 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     //Setup by auction
     address private client;
     address private auctionAddress;
-    uint256 private monthlyPayment;
+    uint256 private payment;
     uint256 private startDate;
     uint256 private lastPaymentCut;
     uint256 private endDate;
 
     //Used in Monitoring after API Consumer
     uint256 private violationsPaymentPeriodCount; // reseterar en cada periodo
-    uint256 private totalViolations; //for future think in send violations to SC recomendation system
+    uint256 private violations; //for future think in send violations to SC recomendation system
 
     uint256 private totalMesurements;
-    uint256 private disponibilityCalculated; //Calculeted monthly
+    uint256 private disponibilityCalculated; //Calculeted once
     uint256 private currentDebt;
 
     //termination variables
@@ -93,6 +95,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     //Contract End , alredy declared
 
     event RequestVolume(bytes32 indexed requestId, string volume);
+    event Received(address sender, uint amount);
 
     //string aPIKey;
 
@@ -134,7 +137,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         disponibility10 = _params[18];
         disponibility30 = _params[19];
         mesurePeriod = _params[20];
-        paymentPeriod = _params[21];
+        contractDuration = _params[21];
 
         endpoint = _endpoint;
         activeContract = false;
@@ -150,9 +153,9 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         myPath = "args,metrics";
 
         //Violations and Penalties calculations params
-        violationsPaymentPeriodCount = 0;
-        totalViolations = 0;
+        violations = 0;
         currentDebt = 0;
+        totalMesurements = contractDuration / mesurePeriod;
     }
 
     /** API Consumer Functions */
@@ -241,43 +244,66 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
             (minthroughput > params[2]) ||
             (maxJitter < params[3]) ||
             (minBandWith > params[4]) ||
-            //bitRate = params[5]
+            //bitRate params[5]
             (maxPacketLoos < params[6]) ||
-            // peakDataRateUL = params[7]
-            // peakDataRateDL = params[8]
-            // minMobility = params[9];
-            //maxMobility < params[10];
+            // peakDataRateUL params[7]
+            // peakDataRateDL params[8]
+            // minMobility params[9];
+            //maxMobility <params[10];
             (serviceReliability > params[11]) ||
-            //(maxSurvivalTime < params[12]) ||
+            //(maxSurvivalTime <params[12]) ||
             (minSurvivalTime > params[13]) ||
-            //experienceDataRateDL = params[14];
-            //experienceDataRateUL = params[15];
+            //experienceDataRateDL params[14];
+            //experienceDataRateUL params[15];
             (maxInterruptionTime < params[16])
             //minInterrumptionTime = params[17];
         ) {
-            violationsPaymentPeriodCount += 1;
+            violations += 1;
             setViolation = true;
         }
         return setViolation;
     }
 
     /** Calculate penalties every measure period */
-    function calculatePenalties() public returns (uint256) {
-        uint penalty = 0;
-        disponibilityCalculated =
-            ((totalMesurements - violationsPaymentPeriodCount) * 100) /
-            totalMesurements; //percent of compliance
+    function calculatePenalties(
+        uint256 _totalMesurements,
+        uint256 _violations,
+        uint256 _payment
+    ) public view returns (uint256, uint256) {
+        uint256 penalty = 0;
+        uint256 _disponibilityCalculated = ((_totalMesurements - _violations) *
+            100) / totalMesurements; //percent of compliance
         //Compare with established compliance to set compensation
         if (
-            disponibilityCalculated < disponibility10 &&
-            disponibilityCalculated >= disponibility30
+            _disponibilityCalculated < disponibility10 &&
+            _disponibilityCalculated >= disponibility30
         ) {
-            penalty = (10 * monthlyPayment) / 100; //10 percent compensation
+            penalty = (10 * _payment) / 100; //10 percent compensation
         }
-        if (disponibilityCalculated < disponibility30) {
-            penalty = (30 * monthlyPayment) / 100; //30 percent compensation
+        if (_disponibilityCalculated < disponibility30) {
+            penalty = (30 * _payment) / 100; //30 percent compensation
         }
-        return penalty;
+        return (_disponibilityCalculated, penalty);
+    }
+
+    //Cambiar a internal por temas de seguridad
+    function terminateContract(
+        uint _payment,
+        uint256 _penalties
+    ) public returns (bool /**active Contract */, bool /**contract ended */) {
+        if (block.timestamp > endDate) {
+            uint256 providerPayment = _payment - _penalties;
+            (bool success, ) = providerAddress.call{value: providerPayment}("");
+            if (!success) revert SLA_FailTransferToProvider();
+            uint256 clientReward = _penalties;
+            (success, ) = client.call{value: clientReward}("");
+            if (!success) revert SLA_FailTransferToClient();
+            bool _activeContract = false;
+            bool _contractEnded = true;
+            return (_activeContract, _contractEnded);
+        } else {
+            revert SLA_SLACantByEndBeforeContractDuration();
+        }
     }
 
     function checkContractEnd(uint _penalty) public {
@@ -288,65 +314,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         }
     }
 
-    /** This function most by called every paymentPeriod
-     * at leats untill the contract end
-     */
-    function setClientDebth(uint256 _penalty) internal {
-        currentDebt += monthlyPayment - _penalty;
-        totalViolations += violationsPaymentPeriodCount;
-        violationsPaymentPeriodCount = 0;
-    }
-
-    function payDebth() public payable {
-        //(P) condicion de que si paga toda la deuda es que se establece el contrato como pagado
-    }
-
     /** Setters */
-
-    // function setSLAParamsKPIsSecondBatch(
-    //     address _providerAddress,
-    //     uint256 _bitRate,
-    //     uint256 _maxPacketLoos,
-    //     //uint256 _peakDataRateUL,
-    //     //uint256 _peakDataRateDL,
-    //     //uint256 _minMobility,
-    //     uint256 _maxMobility,
-    //     uint256 _serviceReliability
-    // ) public {
-    //     if (_providerAddress != providerAddress) revert SLA_InvalidProvider();
-    //     if (!setKPIsSuccess) {
-    //         bitRate = _bitRate;
-    //         maxPacketLoos = _maxPacketLoos;
-    //         //peakDataRateUL =  _peakDataRateUL,
-    //         //peakDataRateDL =  _peakDataRateDL,
-    //         //minMobility    =  _minMobility,
-    //         maxMobility = _maxMobility;
-    //         serviceReliability = _serviceReliability;
-    //         setKPIsSuccess = true;
-    //     } else revert SLA_KPIsAlreadyset();
-    // }
-
-    // function setSLAParamsKQIsParamsMonitoring(
-    //     address _providerAddress,
-    //     uint256 _maxSurvivalTime,
-    //     uint256 _minSurvivalTime,
-    //     //uint256 _experienceDataRateDL,
-    //     //uint256 _experienceDataRateUL,
-    //     uint256 _maxInterruptionTime,
-    //     uint256 _minInterrumptionTime,
-    //     //monitoring params
-    //     uint256 _disponibility10,
-    //     uint256 _disponibility30,
-    //     uint256 _mesurePeriod,
-    //     uint256 _paymentPeriod
-    // ) public {
-    //     if (_providerAddress != providerAddress) revert SLA_InvalidProvider();
-    //     //set   KQIs
-    //     if (!setKPIsSuccess) revert SLA_KPIsMostBeSetFirst();
-    //     if (!setKQIsSuccess) {
-    //         setKQIsSuccess = true;
-    //     } else revert SLA_KQIsAlreadySet();
-    // }
 
     //This function can be called by auction when the auction end without bids
     function setContractEnd() public {
@@ -366,12 +334,13 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     /*This function is called by auction when the client es defined
      *and activate the SLA operation before asigning client
      */
-    function setClient(address _client, uint _montlyPayment) external {
+    function setClient(address _client, uint _payment) external {
         if (activeContract) revert SLA_SLAAlredyActive();
         client = _client;
         activeContract = true;
-        monthlyPayment = _montlyPayment;
+        payment = _payment;
         startDate = block.timestamp;
+        endDate = startDate + contractDuration;
         lastPaymentCut = block.timestamp;
     }
 
@@ -408,12 +377,25 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         return contractEnded;
     }
 
-    function getMontlyPayment() external view returns (uint256) {
-        return monthlyPayment;
+    function getPayment() external view returns (uint256) {
+        return payment;
     }
 
     function getProviderAddress() external view returns (address) {
         return providerAddress;
+    }
+
+    function getViolations() external view returns (uint256) {
+        return violations;
+    }
+
+    function getTotalMesurements() external view returns (uint256) {
+        return totalMesurements;
+    }
+
+    receive() external payable {
+        // Emitir evento para registrar la recepción de ether
+        emit Received(msg.sender, msg.value);
     }
 }
 

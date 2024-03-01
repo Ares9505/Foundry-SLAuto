@@ -86,7 +86,7 @@ contract Auction {
             );
             require(success, "Contract end Successfully");
         } else {
-            beneficiary.transfer(highestBid);
+            payable(slaAddress).transfer(highestBid);
             //Establish client and SLA active
             (bool successSetActive, ) = slaAddress.call(
                 abi.encodeWithSignature(
@@ -125,8 +125,8 @@ contract Auction {
  *
  * 4. Al acabar el tiempo de subasta inhabilitar el contrato y notificar de termiancion sin interesados de no haberlos X
  * (chainlink automation)
- * No poner transferencia automatica a bidders al fin de la subasta pq se podria desbordar
- * la funcion con muchas transferencias, por eso cada cliente debe retirar (withdraw sus propios fondos)
+ *      No se pone al terminar la subasta transferencia automatica de pending returns a bidders pq se podria desbordar
+ *      la funcion con muchas transferencias, por eso cada cliente debe retirar (withdraw sus propios fondos)
  *
  * 4. El proveedor puede escoger ganador previamente antes de terminar (si da tiempo)
  *

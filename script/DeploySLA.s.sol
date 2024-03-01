@@ -39,7 +39,7 @@ contract DeploySLA is Script {
             0x5B38Da6a701c568545dCfcB03FcB875f56beddC4, // Dirección Ethereum de ejemplo
             "0xabcdef1234567890", // Hash de documento de ejemplo
             params,
-            "https://api.example.com" // Endpoint de ejemplo
+            "https://api.example.com" // Endpoint de ejemplo,
         );
         vm.stopBroadcast();
         return sla;

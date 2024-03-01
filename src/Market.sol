@@ -67,65 +67,6 @@ contract Market {
         return (address(newSLA), address(newAuction));
     }
 
-    // function setSLAParamsKPIsSecondBatch(
-    //     address _slaAddress,
-    //     uint256 _bitRate,
-    //     uint256 _maxPacketLoos,
-    //     //uint256 _peakDataRateUL,
-    //     //uint256 _peakDataRateDL,
-    //     //uint256 _minMobility,
-    //     uint256 _maxMobility,
-    //     uint256 _serviceReliability
-    // ) public {
-    //     SLA(_slaAddress).setSLAParamsKPIsSecondBatch(
-    //         msg.sender, //providerAddress caller
-    //         _bitRate,
-    //         _maxPacketLoos,
-    //         // _peakDataRateUL,
-    //         // _peakDataRateDL,
-    //         // _minMobility,
-    //         _maxMobility,
-    //         _serviceReliability
-    //     );
-    // }
-
-    // function setSLAParamsKQIs(
-    //     address _slaAddress,
-    //     uint256 _maxSurvivalTime,
-    //     uint256 _minSurvivalTime,
-    //     //uint256 _experienceDataRateDL,
-    //     //uint256 _experienceDataRateUL,
-    //     uint256 _maxInterruptionTime,
-    //     uint256 _minInterrumptionTime,
-    //     //
-    //     uint256 _disponibility10,
-    //     uint256 _disponibility30,
-    //     uint256 _mesurePeriod,
-    //     uint256 _paymentPeriod,
-    //     //
-    //     uint256 _biddingTime
-    // ) public returns (address) {
-    //     SLA(_slaAddress).setSLAParamsKQIsParamsMonitoring(
-    //         msg.sender, //providerAddress caller
-    //         _maxSurvivalTime,
-    //         _minSurvivalTime,
-    //         // _experienceDataRateDL,
-    //         // _experienceDataRateUL,
-    //         _maxInterruptionTime,
-    //         _minInterrumptionTime,
-    //         _disponibility10,
-    //         _disponibility30,
-    //         _mesurePeriod,
-    //         _paymentPeriod
-    //     );
-    //     Auction newAuction = new Auction(
-    //         _biddingTime,
-    //         payable(msg.sender),
-    //         payable(address(newSLA))
-    //     );
-    //     return address(newAuction);
-    // }
-
     function discoverSLA(
         uint _index
     )
@@ -176,5 +117,10 @@ Entry example
  * 6. Añadir eventos de creacion de contrato
  * 
  * Revisar
- 
+ */
+
+/**Problemas a pensar
+ * Auction end puede ser llamado por cualquiera
+ * La subasta debe ser terminada por chainlink keeper
+ *
  */
