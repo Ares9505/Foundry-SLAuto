@@ -75,13 +75,11 @@ contract SLATest is Test {
         //Comented line 145 to evit transferAndCall Revert, Link transfer is not needed in test
         bytes32 request_id = sla.requestVolumeData();
         string
-            memory dummyVolume = "12452,1902,19002,1900,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32";
+            memory dummyVolume = "12452,1902,19002,1900,15,16,17,18,19,20,21,22,23,24,25,26,27,28";
         vm.prank(CHAINLINK_ORACLE_ADDRESS); //The caller most by the oracle address set in APIConsumerContract
         sla.fulfill(request_id, dummyVolume);
         console.log(dummyVolume);
     }
-
-    
 
     //check Violations
     //Calculate penalties

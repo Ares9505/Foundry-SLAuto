@@ -134,16 +134,17 @@ contract AuctionTest is Test {
 
 /**Actividades para SC Auction:   Para un SLA inactivo asigna un cliente. Para ello
  * 1. Funcion recibir oferta.X
+ *      Establecer piso de oferta X
  * 2. Funcion para determinar oferta ganadora:
  *      * Declarar SLA activo asignandole cliente a partir de llamar la funcion del SLA
  *      correspondiente para añadir el cliente X
- *      * Pasar valor de pago mensual a SC SLA
- * 3. Al acabar el tiempo de subasta inhabilitar el contrato y notificar de termiancion sin interesados de no haberlos X
+ *      * Pasar valor de pago mensual a SC SLA X
+ * 3. Al acabar el tiempo de subasta inhabilitar el contrato y notificar 
+ * de termiancion sin interesados de no haberlos X
  * (chainlink automation)
  *
  * 4. El proveedor puede escoger ganador previamente antes de terminar (si da tiempo)
  *
  * 5. Cambiar a private todas la variables
- * ¿Que pasa si no hubo ganador?
- * poner un piso (valor minimo) a la subasta
++
  */

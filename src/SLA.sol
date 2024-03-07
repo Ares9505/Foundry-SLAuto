@@ -83,7 +83,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     uint256 private endDate;
 
     //Used in Monitoring after API Consumer
-    uint256 private violationsPaymentPeriodCount; // reseterar en cada periodo
+    //uint256 private violationsPaymentPeriodCount; // reseterar en cada periodo
     uint256 private violations; //for future think in send violations to SC recomendation system
 
     uint256 private totalMesurements;
@@ -91,6 +91,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     uint256 private currentDebt;
 
     //termination variables
+    uint256 private penalty;
     bool private endPaid; //Tell if the entire contract was paid
     //Contract End , alredy declared
 
@@ -183,16 +184,17 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     ) public recordChainlinkFulfillment(_requestId) {
         emit RequestVolume(_requestId, _volume);
         volume = _volume;
-        //Funcionality added different from API Consumer
-        // (
-        //     uint latency,
-        //     uint througput,
-        //     uint jitter,
-        //     uint bandwith
-        // ) = extractParams(volume);
-        // checkViolations(latency, througput, jitter, bandwith);
-        //calculate penalty if paymentPeriod (set to a month) is reached due to only one automation is used
-        //Esta funcion se ejecuta si han pasado payment period
+        uint256[18] memory extractedParams;
+        extractedParams = extractParams(volume);
+        checkViolations(extractedParams);
+        if (block.timestamp >= endDate) {
+            (disponibilityCalculated, penalty) = calculatePenalties(
+                totalMesurements,
+                violations,
+                payment
+            );
+            terminateContract(payment, penalty);
+        }
     }
 
     //Note taht only owner is a modifier from ConfirmedOwner.sol
@@ -270,7 +272,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         uint256 _violations,
         uint256 _payment
     ) public view returns (uint256, uint256) {
-        uint256 penalty = 0;
+        uint256 _penalty = 0;
         uint256 _disponibilityCalculated = ((_totalMesurements - _violations) *
             100) / totalMesurements; //percent of compliance
         //Compare with established compliance to set compensation
@@ -278,12 +280,12 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
             _disponibilityCalculated < disponibility10 &&
             _disponibilityCalculated >= disponibility30
         ) {
-            penalty = (10 * _payment) / 100; //10 percent compensation
+            _penalty = (10 * _payment) / 100; //10 percent compensation
         }
         if (_disponibilityCalculated < disponibility30) {
-            penalty = (30 * _payment) / 100; //30 percent compensation
+            _penalty = (30 * _payment) / 100; //30 percent compensation
         }
-        return (_disponibilityCalculated, penalty);
+        return (_disponibilityCalculated, _penalty);
     }
 
     //Cambiar a internal por temas de seguridad
@@ -291,7 +293,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         uint _payment,
         uint256 _penalties
     ) public returns (bool /**active Contract */, bool /**contract ended */) {
-        if (block.timestamp > endDate) {
+        if (block.timestamp >= endDate) {
             uint256 providerPayment = _payment - _penalties;
             (bool success, ) = providerAddress.call{value: providerPayment}("");
             if (!success) revert SLA_FailTransferToProvider();
@@ -303,14 +305,6 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
             return (_activeContract, _contractEnded);
         } else {
             revert SLA_SLACantByEndBeforeContractDuration();
-        }
-    }
-
-    function checkContractEnd(uint _penalty) public {
-        if (block.timestamp > endDate) {
-            currentDebt -= _penalty;
-            setContractEnd();
-            //still not paid, i meant payment pendent
         }
     }
 
@@ -391,6 +385,10 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
 
     function getTotalMesurements() external view returns (uint256) {
         return totalMesurements;
+    }
+
+    function getPenalty() external view returns (uint256) {
+        return penalty;
     }
 
     receive() external payable {

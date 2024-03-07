@@ -63,6 +63,11 @@ contract testMarket is Test {
     address public CLIENT_3 = makeAddr("client3");
     uint256 public constant STARTING_BALANCE = 100 ether;
 
+    address public CHAINLINK_ORACLE_ADDRESS =
+        0x6090149792dAAeE9D1D568c9f9a6F6B46AA29eFD;
+    address public CHAINLINK_AUTOMATION_ADDRESS =
+        makeAddr("Chainlink Automation");
+
     function setUp() external {
         DeployMarket deployer = new DeployMarket();
         market = deployer.run();
@@ -512,7 +517,8 @@ contract testMarket is Test {
             providerBalanceBeforeTermination
         );
 
-        SLA(payable(slaAddress)).terminateContract(PAYMENT, fixedPenalty);
+        (bool activeContract, bool contractEnded) = SLA(payable(slaAddress))
+            .terminateContract(PAYMENT, fixedPenalty);
 
         //Check balances after termination
         uint256 clientBalance = CLIENT_1.balance;
@@ -527,11 +533,114 @@ contract testMarket is Test {
             providerBalance - providerBalanceBeforeTermination ==
                 PAYMENT - fixedPenalty
         );
+        assert(contractEnded);
+        assert(!activeContract);
     }
 
-    // function testIntegrationsOfFunctionsOnFullfill() public{
+    /**Auxiliar simulate monitoring
+     * ------------------------------
+     * A diferencia de simulate monitoring, no crea ni activa un sla
+     * previamente
+     */
 
-    // }
+    function simulateOnlyMonitoring(
+        address slaAddress,
+        bool withViolations
+    ) public {
+        vm.warp(block.timestamp + MESUREPERIOD);
+        vm.roll(block.number + 1);
+
+        vm.prank(CHAINLINK_AUTOMATION_ADDRESS);
+        //Request Volume Data to Chainlink Oracle
+        //Comented line 145 to evit transferAndCall Revert, Link transfer is not needed in test
+        bytes32 request_id = SLA(payable(slaAddress)).requestVolumeData();
+        string memory dummyVolume;
+        if (withViolations) {
+            dummyVolume = "4,20,10,10,10,100,1,20,10,0,10,95,1000,500,50,20,200,100";
+        } else {
+            //latencia exedida
+            dummyVolume = "4,200,10,10,10,100,1,20,10,0,10,95,1000,500,50,20,200,100";
+        }
+
+        vm.prank(CHAINLINK_ORACLE_ADDRESS); //The caller most by the oracle address set in APIConsumerContract
+        SLA(payable(slaAddress)).fulfill(request_id, dummyVolume);
+    }
+
+    function testIntegrationsOfFunctionsOnFullfill() public {
+        /**Pasos del test:
+         * Se crea SC Market
+         * Se añade proveedor 1
+         *
+         */
+
+        //Market owner add provider
+        address owner = market.getOwner();
+        vm.prank(owner);
+        market.addProvider("etecsa", PROVIDER_1);
+
+        //Provider create SLA
+        uint256 contractDuration = 1 days; //para que la prueba no dure tanto
+        vm.prank(PROVIDER_1);
+        (address slaAddress, address auctionAddress) = market.createCustomSLA(
+            DOCHASH,
+            [
+                uint256(MINLATENCY),
+                uint256(MAXLATENCY),
+                uint256(MINTHROUGHPUT),
+                uint256(MAXJITTER),
+                uint256(MINBANDWITH),
+                uint256(BIT_RATE),
+                uint256(MAX_PACKET_LOSS),
+                uint256(PEAK_DATA_RATE_UL),
+                uint256(PEAK_DATA_RATE_DL),
+                uint256(MIN_MOBILITY),
+                uint256(MAX_MOBILITY),
+                uint256(SERVICE_RELIABILITY),
+                uint256(MAX_SURVIVAL_TIME),
+                uint256(MIN_SURVIVAL_TIME),
+                uint256(EXPERIENCE_DATA_RATE_DL),
+                uint256(EXPERIENCE_DATA_RATE_UL),
+                uint256(MAX_INTERRUPTION_TIME),
+                uint256(MIN_INTERRUPTION_TIME),
+                uint256(DISPONIBILITY10),
+                uint256(DISPONIBILITY30),
+                uint256(MESUREPERIOD),
+                contractDuration
+            ],
+            ENDPOINT,
+            BIDDINGTIME,
+            STARTVALUE
+        );
+
+        //Client make a bid and the action is ended
+        vm.prank(CLIENT_1);
+        uint256 bidAmount = 0.3 ether;
+        Auction(auctionAddress).bid{value: bidAmount}();
+
+        vm.prank(CLIENT_2);
+        uint256 bidAmount2 = 0.5 ether;
+        Auction(auctionAddress).bid{value: bidAmount2}();
+
+        testMarket.setBiddingTimeEnd();
+        Auction(auctionAddress).auctionEnd();
+
+        //Simulate 30% de malas mediciones pero usando la funcion fullfill
+        uint256 totalMesurements = SLA(payable(slaAddress))
+            .getTotalMesurements();
+        uint256 badMesurements = (totalMesurements * 30) / 100;
+
+        for (uint256 i = 0; i < badMesurements; i++) {
+            simulateOnlyMonitoring(slaAddress, true /**withViolations */);
+        }
+        for (uint256 i = badMesurements; i < totalMesurements; i++) {
+            simulateOnlyMonitoring(slaAddress, false /**withViolations */);
+        }
+
+        bool activationState = SLA(payable(slaAddress)).getSlaActivationState();
+        assert(activationState);
+        console.log("payment", SLA(payable(slaAddress)).getPayment());
+        console.log("penalty", SLA(payable(slaAddress)).getPenalty());
+    }
     // //function
     // function testIntegration
     // function testTermination
