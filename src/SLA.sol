@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "./mylib/ConfirmedOwner.sol"; //"@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 import "./mylib/strings.sol";
-import "./mylib/Str2Uint.sol";
 
 contract SLA is ChainlinkClient, ConfirmedOwner {
     error SLA_SLAAlredyActive();
@@ -32,7 +31,6 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
 
     //To use string utilities
     using strings for *;
-    using stringToUintConverter for string;
 
     //SLA Info
     string private providerName;
@@ -216,6 +214,25 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     }
 
     /** Auxiliar Functions For Fullfillment */
+    function str2uint(
+        string memory str
+    ) public pure returns (uint /**value */, bool /**success */) {
+        bytes memory strBytes = bytes(str);
+        uint value = 0;
+        bool success = true;
+
+        for (uint i = 0; i < strBytes.length; i++) {
+            if (!(strBytes[i] >= bytes1("0") && strBytes[i] <= bytes1("9"))) {
+                success = false;
+                return (0, success);
+            }
+
+            value = value * 10 + (uint8(strBytes[i]) - 48);
+        }
+
+        return (value, success);
+    }
+
     function extractParams(
         string memory rawData
     ) public pure returns (uint256[18] memory) {
@@ -228,7 +245,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         bool success;
         for (uint i = 0; i < params.length; i++) {
             string memory param = stringSlice.split(delim).toString();
-            (params[i], success) = param.str2uint();
+            (params[i], success) = str2uint(param);
             if (!success) revert SLA_Str2UintInvalidDigit();
         }
         return params;

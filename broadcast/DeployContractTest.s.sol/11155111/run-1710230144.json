@@ -1,0 +1,36 @@
+{
+  "transactions": [
+    {
+      "hash": null,
+      "transactionType": "CREATE",
+      "contractName": "DeployContractTest",
+      "contractAddress": "0x5b73C5498c1E3b4dbA84de0F1833c4a029d90519",
+      "function": null,
+      "arguments": null,
+      "transaction": {
+        "type": "0x02",
+        "from": "0x1804c8ab1f12e6bbf3894d4083f33e07309d1f38",
+        "gas": "0x1a9db",
+        "value": "0x0",
+        "data": "0x6080604052348015600f57600080fd5b50608d8061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c80633343fff214602d575b600080fd5b603d6038366004603f565b600055565b005b600060208284031215605057600080fd5b503591905056fea2646970667358221220555ae60b36fc221c3eb013b94c3b67465bdbac1a20b59ad995790112370e059b64736f6c63430008130033",
+        "nonce": "0x2",
+        "accessList": []
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [],
+  "returns": {
+    "0": {
+      "internal_type": "contract Example",
+      "value": "0x34A1D3fff3958843C43aD80F30b94c510645C316"
+    }
+  },
+  "timestamp": 1710230144,
+  "chain": 11155111,
+  "multi": false,
+  "commit": "16d361a"
+}

@@ -17,7 +17,7 @@ contract DeployMarketSepolia is Script {
         return market;
     }
 
-    /** forge script script/SepoliaDeploy/DeployMarketSepolia.sol --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvv
+    /** forge script script/SepoliaDeploy/DeployMarketSepolia.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify  -vvvv --watch
      * Se deplego pero no se verifico el contrato
      */
 }
