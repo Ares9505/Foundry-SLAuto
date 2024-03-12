@@ -21,16 +21,16 @@ w3 = Web3(Web3.HTTPProvider(ALCHEMY_API_KEY)) #Alchemy APi (nodeprovider)
 ipfs_api = ipfsApi.Client(URL_IPFS_API, IPFS_PORT) #IPFS API
 
 #Market ABI
-with open('./out/Market.sol/Market.json') as file:
+with open('./out/ContractTest.sol/Example.json') as file:
     contractMarketCompilation = json.load(file)
 
 contract_market_ABI = contractMarketCompilation['abi']
 
 #tomar el ultimo Market.sol desplegado
-with open('./broadcast/DeployMarketSepolia.sol/11155111/run-latest.json') as f:
+with open('./broadcast/DeployContractTest.s.sol/11155111/run-latest.json') as f:
      contract_market_last_deployment = json.load(f)
 
-contract_market_address = contract_market_last_deployment['transactions'][1]['contractAddress']
+contract_market_address = contract_market_last_deployment['transactions'][0]['contractAddress']
 
 
 
@@ -51,25 +51,15 @@ def upload_to_ipfs() -> list[3]:
 
 def testBCLatencyCreateSLA():
     contract_market = w3.eth.contract(address=contract_market_address, abi=contract_market_ABI)
-    #resultado = contract_market.functions.getOwner().call()
-    #print(resultado)
     
-    doc_hash = 'hash_del_documento'
-    params = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]  # Ejemplo de parámetros
-    endpoint = 'url_del_endpoint'
-    bidding_time = 1000
     start_value = 50
 
     nonce = w3.eth.get_transaction_count(WALLET_ADDRESS_PROVIDER)
-    transaction = contract_market.functions.createCustomSLA(
-    doc_hash,
-    params,
-    endpoint,
-    bidding_time,
+    transaction = contract_market.functions.settest(
     start_value
     ).build_transaction({
     'chainId': 11155111,  # Asegúrate de usar el ID de cadena correcto para tu red
-    'gas': 8000000,
+    'gas': 5000000,
     'gasPrice': w3.to_wei('50', 'gwei'),
     'nonce': nonce,
     })
@@ -90,33 +80,4 @@ def retrieve_from_ipfs(hash):
 #Test RTT user-provider
 #test_conexion()
 
-#Test RTT create SLA 
-#testBCLatencyCreateSLA()
-
-print(contract_market_ABI)
-print("")
-print(contract_market_address)
-
-""" Pendents:
-Latency test:
-
-user   ==>  node provider ==> Blockchain
-1- RTT (user-nodeprovider) Function test conection X
-     tiempo que toma llegar al primer nodo y tener una respuesta
-     
-
-2- RTT llamada a la funcion create SLA de SC Market
-    Verificar contrato Market
-    Añadir evento al contrato de creacion de SLA y Subasta
-    Subscribirse al evento 
-    Guardar los del evento con python
-
-3- Registro de cliente
-4- RTT oferta de cliente
-5- Medición de llamada a chainlink
-6- Medir descubrimiento de proveedores
-7- Medir tiempo de transferencia
-
-
-
-"""
+testBCLatencyCreateSLA()
