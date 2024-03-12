@@ -1,11 +1,13 @@
 # Compiler files
 cache/
 out/
+myvenv/
 
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
 /broadcast/**/dry-run/
+/broadcast/**/11155111
 
 # Docs
 docs/

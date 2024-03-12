@@ -2,21 +2,22 @@
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Market} from "../src/Market.sol";
+import {Market} from "../../src/Market.sol";
 
-contract DeployMarket is Script {
+contract DeployMarketSepolia is Script {
     Market market;
     string marketCreator;
 
     function run() public returns (Market) {
+        uint256 deployer = vm.envUint("PRIVATE_KEY");
         marketCreator = "totalPlay";
-        vm.startBroadcast();
-        uint256 start = vm.unixTime();
+        vm.startBroadcast(deployer);
         market = new Market(marketCreator);
         vm.stopBroadcast();
-        uint256 end = vm.unixTime();
-        uint256 deploymentTime = end - start;
-        console.log("deploymentTime: ", deploymentTime);
         return market;
     }
+
+    /** forge script script/DeployMarketSepolia.sol --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvv
+     * Se deplego pero no se verifico el contrato
+     */
 }

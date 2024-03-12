@@ -1,21 +1,24 @@
+## Pendents
+Latency test
+Cost test
+
+
 ## Requirements
 Install foundry
 
 ## Usage
 forge install smartcontractkit/chainlink-brownie-contracts
 
-## Issues
-Guardar primary key de SEPOLIA 
-Guardar primary key de mi billetera
-
 ## Remember
 At the end of contract make diagram flows of the hole proccess
 Before test in sepolia uncomment line 145 of ChainlinkClient.sol
 
 ## Pendents Summary
-Check Violations
-Calculate penalties
-Envío de fondos (pago mensual)
-Terminación
+Que solo clientes y proveedores puedan hacer ofertas
 Resolucion de disputas
+Sistema de recomendacion
+Registrar clientes
+Dar a conocer los SLA activos
+Agregar keeper para terminar subasta
+
 

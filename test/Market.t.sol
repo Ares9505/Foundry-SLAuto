@@ -71,9 +71,11 @@ contract testMarket is Test {
     function setUp() external {
         DeployMarket deployer = new DeployMarket();
         market = deployer.run();
-        vm.deal(CLIENT_1, STARTING_BALANCE);
-        vm.deal(CLIENT_2, STARTING_BALANCE);
-        vm.deal(CLIENT_3, STARTING_BALANCE);
+        if (block.chainid == 31337) {
+            vm.deal(CLIENT_1, STARTING_BALANCE);
+            vm.deal(CLIENT_2, STARTING_BALANCE);
+            vm.deal(CLIENT_3, STARTING_BALANCE);
+        }
     }
 
     /** Auxiliar createSLA function */
