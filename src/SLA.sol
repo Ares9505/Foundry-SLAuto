@@ -315,8 +315,10 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
             (bool success, ) = providerAddress.call{value: providerPayment}("");
             if (!success) revert SLA_FailTransferToProvider();
             uint256 clientReward = _penalties;
-            (success, ) = client.call{value: clientReward}("");
-            if (!success) revert SLA_FailTransferToClient();
+            if (_penalties != 0) {
+                (success, ) = client.call{value: clientReward}("");
+                if (!success) revert SLA_FailTransferToClient();
+            }
             bool _activeContract = false;
             bool _contractEnded = true;
             return (_activeContract, _contractEnded);
@@ -446,8 +448,8 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
 4. Funcion para Chequear violaciones X
         Pensar en añadir evento que diga que parámetro due violado
 
-5. Funcion Para Calcular penalidades
-6. Funcion para fijar actualizar deuda y deuda en terminacion de contrato
+5. Funcion Para Calcular penalidades X
+6. Funcion para transferir dineros y terminacion de contrato X
 
 
 

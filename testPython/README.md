@@ -22,8 +22,10 @@ Write inside .gitignore the name of the virtual enviroment
 >>pip install python-dotenv
 Create .env file to storage api keys.
 
-8- Instalar libreria web3:
+8- Instalar librerias:
 pip install web3
+pip install pandas
+pip install seaborn
 
 9- Create SSH key pair and save it in github account 
 ssh-keygen -t ed25519 -C "Windows_key"

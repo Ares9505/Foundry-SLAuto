@@ -9,7 +9,13 @@ contract DeploySLA is Script {
     SLA sla;
 
     function run() public returns (SLA) {
-        vm.startBroadcast();
+        if (block.chainid == 31337 /** anvil chain id */) {
+            vm.startBroadcast();
+        } else {
+            /** Ethereum Sepolia , Polygon Mumbai */
+            uint256 deployer = vm.envUint("PRIVATE_KEY");
+            vm.startBroadcast(deployer);
+        }
         uint256[22] memory params = [
             uint256(3),
             uint256(7),

@@ -11,9 +11,22 @@ contract Market {
     //List to Restrict SLA creation to providers
     mapping(address => string) public provider;
     mapping(address => bool) private providerExist;
+    mapping(address => string) private addressToclients;
 
     SLA[] public listOfSLA; //List of SLA
     address private i_owner; //Saving contract owner
+
+    event e_createSLA(
+        string docHash,
+        address newSLAAddress,
+        address newAuctionAddress,
+        uint256 endDate,
+        uint256[22] params
+    );
+
+    event e_providerAdded(string providerName, address providerAddress);
+
+    event e_clientAdded(string clientName, address clientAddress);
 
     constructor(string memory _providerName) {
         i_owner = msg.sender;
@@ -36,6 +49,15 @@ contract Market {
     ) public onlyProvider {
         provider[_providerAddress] = _providerName;
         providerExist[_providerAddress] = true;
+        emit e_providerAdded(_providerName, _providerAddress);
+    }
+
+    function addClient(
+        string memory _clientName,
+        address _clientAddress
+    ) public {
+        addressToclients[_clientAddress] = _clientName;
+        emit e_clientAdded(_clientName, _clientAddress);
     }
 
     function createCustomSLA(
@@ -63,6 +85,15 @@ contract Market {
             payable(msg.sender),
             payable(address(newSLA)),
             _startValue
+        );
+
+        uint256 _endDate = block.timestamp + _biddingTime;
+        emit e_createSLA(
+            _docHash,
+            address(newSLA),
+            address(newAuction),
+            _endDate,
+            _params
         );
         return (address(newSLA), address(newAuction));
     }
@@ -99,23 +130,17 @@ Entry example
 */
 
 /**Actividades para SC Market:
- *X 1. Recibe parámetros para la creación de SLA 
+ *X 1. Recibe parámetros para la creación de SLA
  *     X 1.1. Para la creacion de un SLA se debe acompañar con la creacion de una subasta que
- *           requiere la direccion del SLA y el tiempo de subasta como parametros 
- * X 2. Hacer modificador de requerido para crear SC SLA inactivos. (Solo proveedores registrados 
- *      pueden crear nuevos SLA) 
- * 
- * 3. Hacer registro de clientes con los parametros (address, nombre)
- * 4. Hacer función de descubrimiento de SLA “inactivos”.
+ *           requiere la direccion del SLA y el tiempo de subasta como parametros
+ * X 2. Hacer modificador de requerido para crear SC SLA inactivos. (Solo proveedores registrados
+ *      pueden crear nuevos SLA)
+ *
+ * 3. Hacer registro de clientes con los parametros (address, nombre) X
+ * 4. Hacer función de descubrimiento de SLA “inactivos”. X
  *      Una idea es q devuelva todos los SLA y q se filtren los inactivos se muestren en la dAPP para no consumir gas de mas
- * 5. Canalizar como un cliente hace una oferta desde market y llega a la subasta de determinado SLA(Solo un cliente puede participar en la subasta)
-
-
- * 
- * 4. Asegurarse de que solo los clientes pueden ver los SLAs
- * 5. Añadir cliente inactivo y evento a SLA subasta
- * 6. Añadir eventos de creacion de contrato
- * 
+ *      Se usaron los eventos para ello X
+ *
  * Revisar
  */
 

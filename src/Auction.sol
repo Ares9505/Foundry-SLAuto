@@ -86,7 +86,7 @@ contract Auction {
             );
             require(success, "Contract end Successfully");
         } else {
-            payable(slaAddress).transfer(highestBid);
+            payable(beneficiary).transfer(highestBid); //for test change to beneficiary to real implementation slaAddress
             //Establish client and SLA active
             (bool successSetActive, ) = slaAddress.call(
                 abi.encodeWithSignature(
