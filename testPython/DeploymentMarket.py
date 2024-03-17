@@ -52,9 +52,6 @@ if CURRENT_CHAIN == "Polygon":
 
 def test_conexion():
     start = time.time()
-    #para Polygon solamente
-
-    #--------------
     last_block = w3.eth.get_block('latest')
     end = time.time()
     call_duration = end - start
@@ -89,7 +86,7 @@ def genericTransaction(contract, function_name: str, value: int, chain_id: int, 
     executable_function = getattr(contract.functions,function_name )
     transaction = executable_function(*parameters).build_transaction({
     'chainId': chain_id ,  # Asegúrate de usar el ID de cadena correcto para tu red Sepolia
-    'gas': 8000000,
+    'gas': 4000000,
     'gasPrice':w3.eth.gas_price, #w3.to_wei('50', 'gwei'),
     'nonce': nonce,
     'value' : value
@@ -109,7 +106,6 @@ def genericTransaction(contract, function_name: str, value: int, chain_id: int, 
     rtt = end - start
     return receipt, rtt
 
-
 #Market ABI
 def compilate_market():
     with open('./out/Market.sol/Market.json') as file:
@@ -124,7 +120,7 @@ def compilate_market():
 #DEPOY MARKET
     provider_name = "dummy_name"
     rtt_user_provider = test_conexion()
-    receipt, rtt_user_bc = deployContract(contract_market_predeploy, 0,current_chain_id , provider_name)
+    receipt, rtt_user_bc = deployContract(contract_market_predeploy, 0, current_chain_id , provider_name)
     print(receipt)
     rtt = rtt_user_bc - rtt_user_provider
     gas_used = receipt['cumulativeGasUsed']
@@ -139,12 +135,11 @@ def compilate_market():
     else:
         print("Transacction failed")
 
-
 def testAddProvider(contract_market, contract_address):
     providerName = "dummyName"
     providerAddress = "0xC9a7A5F8f2BDf39f602f2F5ab68c8790789Ca63f" #dummy
     rtt_user_provider = test_conexion()
-    receipt, rtt_user_bc = genericTransaction(contract_market , "addProvider", 0, SEPOLIA_CHAIN_ID, providerName, providerAddress )
+    receipt, rtt_user_bc = genericTransaction(contract_market , "addProvider", 0, current_chain_id, providerName, providerAddress )
     print(receipt)
 
     #Extract receipt data
@@ -161,6 +156,32 @@ def testAddProvider(contract_market, contract_address):
     else:
         print("Transacction failed")
 
+def testCreateSLA(contract_market, contract_address):#using generic transaction
+    doc_hash = 'hash_del_documento'
+    params = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]  # Ejemplo de parámetros
+    endpoint = 'url_del_endpoint'
+    bidding_time = 1000
+    start_value = 50
+    function_name = "createCustomSLA"
+    rtt_user_provider = test_conexion()
+    receipt, rtt_user_bc = genericTransaction(contract_market , function_name, 0, current_chain_id, doc_hash, params, endpoint, bidding_time, start_value)
+    print(receipt)
+    return prepairRecordData(rtt_user_bc, rtt_user_provider,receipt,  function_name, contract_address )
+
+def prepairRecordData(rtt_user_bc, rtt_user_provider, receipt,function_name, contract_address):
+        #Extract receipt data
+    contract_name = "Market"
+    function_name = function_name
+    rtt = rtt_user_bc - rtt_user_provider
+    address = contract_address
+    gas_used = receipt['cumulativeGasUsed']
+    gas_price = receipt['effectiveGasPrice']
+    tx_fee = (gas_used * gas_price) / 10**18
+
+    if receipt['status'] == 1:
+        return [contract_name, function_name, rtt, address, gas_used, gas_price, tx_fee]
+    else:
+        print("Transacction failed")
 
 #incializar un dataframe para un deployment de market
 def initializeContractRecord(contract_name,function_name, rtt, address, gas_used, gas_price, tx_fee):
@@ -203,12 +224,6 @@ def writeMarketRecord(contract_name,function_name, rtt, address, gas_used, gas_p
         df.to_csv(f'./testPython/{CURRENT_CHAIN}MarketRecords.csv', mode = 'a', header = False, index=False, sep=',')
 
 
-# contract_market = w3.eth.contract(address="0x78Aa177C0c6eBDCD46bBab5d21aAF4dcBc8F9548", abi=contract_market_ABI)
-# testAddProvider()
-        
-
-#contract_name, rtt, address, gas_used, gas_price, tx_fee
-#initializeContractRecord("market", 10, "0x32323", 43, 32,32)
 
 #TX RECORDS for Market Deployment
 #------------------ 
@@ -234,21 +249,43 @@ def recordMarketAddProviderFunction():
 
     contract_market_ABI = contractMarketCompilation['abi']
     contract_market = w3.eth.contract(address=contract_address_function_test, abi=contract_market_ABI)
-    record = testAddProvider(contract_market, contract_address_function_test)
-    print(record)
     
+
     for i in range(1,20):   
+        record = testAddProvider(contract_market, contract_address_function_test)
+        print(record)
         time.sleep(15) #tome la muestra cada 15 seg
-        record = compilate_market()
         if record:
             #initializeContractRecord(*record)
             writeMarketRecord(*record)
 
-recordMarketAddProviderFunction()
 
 #TX RECORDS for Market addClient  function
-            
+            #Innecesaria pq sigue la misma logica q addProvider
+
+
 #TX RECORDS for Market CreateCustomSLA function
+def recordMarketCreateCustomSLA():
+    with open('./out/Market.sol/Market.json') as file:
+        contractMarketCompilation = json.load(file)
+
+    contract_market_ABI = contractMarketCompilation['abi']
+    contract_market = w3.eth.contract(address=contract_address_function_test, abi=contract_market_ABI)
+    
+
+    for i in range(1,3):   
+        record = testCreateSLA(contract_market, contract_address_function_test)
+        print(record)
+        time.sleep(15) #tome la muestra cada 15 seg
+        if record:
+            #initializeContractRecord(*record)
+            writeMarketRecord(*record)
+
+
+recordMarketCreateCustomSLA()
+
+
+
             
             
 
