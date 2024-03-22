@@ -57,8 +57,7 @@ def deploy_custom_contract(contract_name, providerName, providerAddress, doc_has
     print(receipt)
     return receipt     
 
-
-if __name__ == '__main__':
+def slaChainlinkCallMesuasure():
     contract_name = "SLA"
     function_name = "requestVolumeData"
     # receipt = deploy_custom_contract(
@@ -73,6 +72,16 @@ if __name__ == '__main__':
 
     contract_address = "0xe6CBdD42c6d3510EAe7C267338bA5738360EE5c6"
     contract_interface = get_contract_interface_by_address(contract_name = contract_name, contract_address_function_test=contract_address)
+    
+    #Set correct endpoint
+    receipt, rtt = genericTransaction(
+        contract_interface,
+        "setAPIurl",
+        0,
+        current_chain_id,
+        
+    )
+
     # receipt, rtt = genericTransaction(
     #     contract= contract_interface,
     #     function_name= function_name,
@@ -80,6 +89,8 @@ if __name__ == '__main__':
     #     chain_id= current_chain_id
     # )
     # print("Recibo de ")
+    #set 
+
     logs_send_time = contract_interface.events.ChailinkRequestSendTime().get_logs(fromBlock=0, toBlock='latest')
     logs_send_request_id = contract_interface.events.ChainlinkRequested().get_logs(fromBlock=0, toBlock='latest')
     print("logs_send_request_id: ", logs_send_request_id[0]['args']['id'])
@@ -88,10 +99,43 @@ if __name__ == '__main__':
         logs_receive = contract_interface.events.RequestVolume().get_logs(fromBlock=0, toBlock='latest')
         if logs_receive:
             print("logs_receive", logs_receive)
+
+def APIConsumerChainlinkCallMesuasure():
+    ''' NO funciono el log del evento RequestVolume'''
+    contract_address = "0x7f8C5655b45AE6D8CE843CC728325065df690047"
+    contract_interface = get_contract_interface_by_address(contract_name= "APIConsumer", contract_address_function_test=contract_address)
+    
+    logs_send_time = contract_interface.events.ChailinkRequestSendTime().get_logs(fromBlock=0, toBlock='latest')
+    logs_send_request_id = contract_interface.events.ChainlinkRequested().get_logs(fromBlock=0, toBlock='latest')
+    print("logs_send_request_id: ", logs_send_request_id[0]['args']['id'])
+    print("logs_send_time: ", logs_send_time[0]['args']['sendTime'])
+    while True:
+        logs_receive = contract_interface.events.RequestVolume().get_logs(fromBlock=0, toBlock='latest')
+        print(logs_receive)
+        if logs_receive:
+            print("logs_receive", logs_receive)
+            break
+
+
+
+if __name__ == '__main__':
+    contract_address = "0x300cDB89AfD313a23249Ca1893452E705D16C3aA"
+    contract_interface = get_contract_interface_by_address(contract_name= "APIConsumerPolygon", contract_address_function_test=contract_address)
+    #transferir tokens al contrato
+    receipt = genericTransaction(
+        contract = contract_interface,
+        function_name = "requestVolumeData",
+        value = 0,
+        chain_id = current_chain_id,
+        )
+    print(receipt)
+    #time.sleep(30)
+
+
 '''
     1 - Mesure time for chinlink call
-            Deploy SLA and set active
-            Set correct endPoint, Configure correctly api in aws
+            Deploy SLA and set active X
+            Set correct endPoint, Configure correctly api in aws 
             Send link to the contract to operate
             Call funcion request volume
             Record
@@ -104,6 +148,16 @@ if __name__ == '__main__':
                     uint256 recieveTime
                 );
             Calculate diferences and save
+
+    1- No sirvió lo anterior por alguna razon no me devolvia el evento de tiempo en fullfill, 
+    por loque lo intente con APIConsumer.sol de forma manual. 
+    Despues de varias pruebas con este contrato al revisar etherscan se pudo observar q para sepolia 
+    el rtt_bc_chainlink(diferencia entre fecha de requestVolumeData y fecha de fulfillOracleRequest2) era igual al tiempo de bloque.
+    Se puede apreciar en la sgte direccion de etherscan https://sepolia.etherscan.io/address/0x5038607C1BeC073e68838C3E8a0B7A5AF28C5ABd#events
+
+    2- Para probar en polygon no me dejo conectarme desde remix, supongo que problemas con el url rpc
+    sin embargo lo intentare desde codigo python.
+
 
 '''
 

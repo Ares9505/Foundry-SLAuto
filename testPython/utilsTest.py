@@ -182,7 +182,9 @@ def getMethodSelectorByFunction(contract_method_name: str) -> str:
     return method_selector
 
 
-print(getMethodSelectorByFunction("bid()"))
+print(getMethodSelectorByFunction("fulfill(bytes32,string)"))
+print(getMethodSelectorByFunction("setAPIurl(string,string)"))
+
 #Test retrieve from ipfs
 #print(retrieve_from_ipfs('QmYJ9FvMcRKDRquKUHwiAMnAdN2cjDznNdKFn3M3z4nPi8'))
 
