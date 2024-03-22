@@ -93,7 +93,13 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
     bool private endPaid; //Tell if the entire contract was paid
     //Contract End , alredy declared
 
-    event RequestVolume(bytes32 indexed requestId, string volume);
+    event ChailinkRequestSendTime(uint256 sendTime);
+
+    event RequestVolume(
+        bytes32 indexed requestId,
+        string volume,
+        uint256 receiveTime
+    );
     event Received(address sender, uint amount);
 
     //string aPIKey;
@@ -173,6 +179,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         req.add("path", myPath);
 
         // Sends the request
+        emit ChailinkRequestSendTime(block.timestamp);
         return sendChainlinkRequest(req, fee);
     }
 
@@ -180,7 +187,7 @@ contract SLA is ChainlinkClient, ConfirmedOwner {
         bytes32 _requestId,
         string memory _volume
     ) public recordChainlinkFulfillment(_requestId) {
-        emit RequestVolume(_requestId, _volume);
+        emit RequestVolume(_requestId, _volume, block.timestamp);
         volume = _volume;
         uint256[18] memory extractedParams;
         extractedParams = extractParams(volume);

@@ -42,7 +42,6 @@ with open('./out/Auction.sol/Auction.json') as file:
     contractAuctionCompilation = json.load(file)
 
 contract_Auction_ABI = contractAuctionCompilation['abi']
-print(contract_Auction_ABI)
 
 #tomar el ultimo Auction.sol desplegado
 with open('./broadcast/DeployAuctionSepolia.s.sol/11155111/run-latest.json') as f:
@@ -169,19 +168,21 @@ def filterAvailableSLA(logs: dict):
 
 
 
-def getMehodSelectorByFunction(contract_method_name: str) -> str:
-    #Posible inputs 
-    # "createCustomSLA(string,uint256[22],string,uint256,uint256)"
-    # "addProvider(string,address)"
-    # "addClient(string,address)"
-    # "bid()"
+def getMethodSelectorByFunction(contract_method_name: str) -> str:
+    #Posible inputs                                                    outputs
+    # "createCustomSLA(string,uint256[22],string,uint256,uint256)"     0x7606b37a
+    # "addProvider(string,address)"                                    0x1e6e256d
+    # "addClient(string,address)"                                      0x7545657e
+    # "bid()"                                                          0x1998aeef
 
     # Calculate hash Keccak-256 de la firma
     keccak_hash = Web3.keccak(text=contract_method_name)
     # Obtein hash's  first  4 bytes 
     method_selector = keccak_hash.hex()[:10]
     return method_selector
-    
+
+
+print(getMethodSelectorByFunction("bid()"))
 #Test retrieve from ipfs
 #print(retrieve_from_ipfs('QmYJ9FvMcRKDRquKUHwiAMnAdN2cjDznNdKFn3M3z4nPi8'))
 
@@ -224,20 +225,23 @@ user   ==>  node provider ==> Blockchain
 
     Añadir evento al contrato de creacion de SLA y Subasta X
     Subscribirse al evento X
-    Guardar logs del evento con python 
-    Filtrar logs para sla activos (pendiente)
+    Guardar logs del evento con python X
+    Filtrar logs para sla activos X
 
 2.1- Añadir eventos a los contratos X
 
 3- Registro de cliente  X
 4- RTT oferta de cliente X
-5- Medición de llamada a chainlink
-6- Medir descubrimiento de proveedores (prueba pendiente)
+4.1- RTT bid y auctionEnd functions X
+5- Medir descubrimiento de proveedores X
 
+6- Medición de llamada a chainlink 
 7- Medir tiempo de transferencia SLA 
+
 7.1 - Medir tiempo de withdraw function 
 
 8- Repetir pruebas para otra blockchain
+
 8- Estimar limite de SLAs
 9- Estimar limite de llamadas por segundo usando una API
 
@@ -245,8 +249,8 @@ user   ==>  node provider ==> Blockchain
         Como guardar los datos?
 
 
-10- Elementos a considerar en el diseño de un sistema que involucre smart contract para monitorear slas
-11- Si da tiempo guardar logs en una dB
+11- Elementos a considerar en el diseño de un sistema que involucre smart contract para monitorear slas
+
 
 
 """

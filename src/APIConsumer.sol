@@ -25,6 +25,7 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
     string public myAPIurl;
     string public myPath;
 
+    event ChailinkRequestSendTime(uint256 sendTime);
     event RequestVolume(bytes32 indexed requestId, string volume);
 
     constructor() ConfirmedOwner(msg.sender) {
@@ -49,6 +50,7 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
         req.add("path", myPath);
 
         // Sends the request
+        emit ChailinkRequestSendTime(block.timestamp);
         return sendChainlinkRequest(req, fee);
     }
 
