@@ -20,13 +20,12 @@ SEPOLIA_CHAIN_ID = 11155111
 SEPOLIA_RPC_URL= os.getenv("SEPOLIA_RPC_URL")
 POLYGON_CHAIN_ID = 80001
 POLYGON_RPC_URL= os.getenv("POLYGON_RPC_URL") #(Pendent)
-
+CURRENT_CHAIN = os.getenv("CURRENT_CHAIN")
 #IPFS setup
 ipfs_api = ipfsApi.Client(URL_IPFS_API, IPFS_PORT) #IPFS API
 
 #Blockchain selection Setup
 #-------------------------------------
-CURRENT_CHAIN= "Sepolia" 
 
 if CURRENT_CHAIN == "Sepolia":
     provider = SEPOLIA_RPC_URL
@@ -101,7 +100,7 @@ def slaChainlinkCallMesuasure():
             print("logs_receive", logs_receive)
 
 def APIConsumerChainlinkCallMesuasure():
-    ''' NO funciono el log del evento RequestVolume'''
+    ''' No funciono el log del evento RequestVolume'''
     contract_address = "0x7f8C5655b45AE6D8CE843CC728325065df690047"
     contract_interface = get_contract_interface_by_address(contract_name= "APIConsumer", contract_address_function_test=contract_address)
     
@@ -154,10 +153,12 @@ if __name__ == '__main__':
     Despues de varias pruebas con este contrato al revisar etherscan se pudo observar q para sepolia 
     el rtt_bc_chainlink(diferencia entre fecha de requestVolumeData y fecha de fulfillOracleRequest2) era igual al tiempo de bloque.
     Se puede apreciar en la sgte direccion de etherscan https://sepolia.etherscan.io/address/0x5038607C1BeC073e68838C3E8a0B7A5AF28C5ABd#events
+     que el tiempo rtt de sepolia a chainlink es de 12 seg igual al tiempo de bloque de sepolia.
 
     2- Para probar en polygon no me dejo conectarme desde remix, supongo que problemas con el url rpc
     sin embargo lo intentare desde codigo python.
-
+    Se puede apreciar en la sgte direccion de polygon scan https://mumbai.polygonscan.com/address/0xCBf668aC4A5523E8d8FA2B06093a894aCa314534#events
+    que el tiempo rtt de polygon a chainlink es de 4 seg igual al tiempo de bloque de polygon.
 
 '''
 

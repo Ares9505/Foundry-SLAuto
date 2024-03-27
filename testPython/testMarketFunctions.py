@@ -23,13 +23,14 @@ SEPOLIA_CHAIN_ID = 11155111
 SEPOLIA_RPC_URL= os.getenv("SEPOLIA_RPC_URL")
 POLYGON_CHAIN_ID = 80001
 POLYGON_RPC_URL= os.getenv("POLYGON_RPC_URL") #(Pendent)
+CURRENT_CHAIN = os.getenv("CURRENT_CHAIN")
+
 
 #IPFS setup
 ipfs_api = ipfsApi.Client(URL_IPFS_API, IPFS_PORT) #IPFS API
 
 #Blockchain selection Setup
 #-------------------------------------
-CURRENT_CHAIN= "Sepolia" 
 
 if CURRENT_CHAIN == "Sepolia":
     provider = SEPOLIA_RPC_URL
@@ -251,7 +252,7 @@ def recordMarketAddProviderFunction():
     contract_market = w3.eth.contract(address=contract_address_market_function_test, abi=contract_market_ABI)
     
 
-    for i in range(1,20):   
+    for i in range(0,2):   
         record = testAddProvider(contract_market, contract_address_market_function_test)
         print(record)
         if record:
@@ -305,12 +306,13 @@ def readCreateCustomSLALogs():
     return list_available_sla
 
 if __name__ == '__main__':
-    #recordMarketDeploymentTx()
+    recordMarketDeploymentTx()
     #recordMarketAddProviderFunction()
     #recordMarketCreateCustomSLA(1)
-    readCreateCustomSLALogs()
+    #readCreateCustomSLALogs()
     # block = w3.eth.get_block('latest')
     # print(block['timestamp'])
+    
 
 """
 Latency test:

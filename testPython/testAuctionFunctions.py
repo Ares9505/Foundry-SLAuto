@@ -19,13 +19,13 @@ SEPOLIA_CHAIN_ID = 11155111
 SEPOLIA_RPC_URL= os.getenv("SEPOLIA_RPC_URL")
 POLYGON_CHAIN_ID = 80001
 POLYGON_RPC_URL= os.getenv("POLYGON_RPC_URL") #(Pendent)
+CURRENT_CHAIN = os.getenv("CURRENT_CHAIN")
 
 #IPFS setup
 ipfs_api = ipfsApi.Client(URL_IPFS_API, IPFS_PORT) #IPFS API
 
 #Blockchain selection Setup
 #-------------------------------------
-CURRENT_CHAIN= "Sepolia" 
 
 if CURRENT_CHAIN == "Sepolia":
     provider = SEPOLIA_RPC_URL
@@ -151,10 +151,9 @@ def deploy_auction_for_auctionEnd_function_test():
 
 def record_auction_function_auctionEnd():
     #Create Custom SLA and save sla_contract_address y auction sla contract
-    for i in range(0,6):
+    for i in range(0,1):
         recordMarketCreateCustomSLA(1)
         list_available_sla = readCreateCustomSLALogs()
-        address_sla_contract = list_available_sla[-1]['newSLAAddress']
         address_auction_contract = list_available_sla[-1]['newAuctionAddress']
 
         #Subnit one bid and wait untill bidding time end

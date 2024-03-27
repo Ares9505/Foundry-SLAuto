@@ -22,3 +22,5 @@ Dar a conocer los SLA activos
 Agregar keeper para terminar subasta
 
 
+sed -i 's/CURRENT_CHAIN=.*/CURRENT_CHAIN="Polygon"/' ./testPython/.env
+sed -i 's/CURRENT_CHAIN=.*/CURRENT_CHAIN="Sepolia"/' ./testPython/.env
